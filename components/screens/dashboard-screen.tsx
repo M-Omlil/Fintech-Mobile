@@ -231,7 +231,7 @@ export function DashboardScreen() {
   if (!profile) return null;
 
   return (
-    <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 140 }}>
       <View className="px-4 pt-4">
         <View className="flex-row items-center justify-between mb-4">
           <View className="flex-row items-center gap-3 flex-1">

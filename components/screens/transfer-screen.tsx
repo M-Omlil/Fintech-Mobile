@@ -221,7 +221,7 @@ export function TransferScreen() {
     >
       <ScrollView
         className="flex-1 bg-slate-50"
-        contentContainerStyle={{ paddingBottom: 32 }}
+        contentContainerStyle={{ paddingBottom: 140 }}
         keyboardShouldPersistTaps="handled"
       >
         <View className="px-4 pt-4">

@@ -84,7 +84,7 @@ export function InsuranceScreen({ view }: { view: "list" | "create" }) {
 
   if (view === "list") {
     return (
-      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 140 }}>
         <View className="px-4 pt-4">
           <View className="mb-4">
             <Text className="text-xl font-black text-slate-900">Assurance Santé</Text>
@@ -217,7 +217,7 @@ export function InsuranceScreen({ view }: { view: "list" | "create" }) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 140 }}>
         <View className="px-4 pt-4">
           <TouchableOpacity
             onPress={() => setActiveTab("insurances")}

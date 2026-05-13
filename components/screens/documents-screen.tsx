@@ -101,7 +101,7 @@ export function DocumentsScreen() {
   if (!profile) return null;
 
   return (
-    <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 140 }}>
       <View className="px-4 pt-4">
         <View className="mb-4">
           <Text className="text-xl font-black text-slate-900">Documents officiels</Text>

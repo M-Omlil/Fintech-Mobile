@@ -20,6 +20,7 @@ import {
   Download,
   UploadCloud,
   ScanLine,
+  Check,
 } from "lucide-react-native";
 import { Card } from "../ui/card";
 import { Input } from "../ui/input";
@@ -36,8 +37,10 @@ const generateId = () => Date.now().toString(36) + Math.random().toString(36).su
 export function InvoiceScreen({ view }: { view: "list" | "create" }) {
   const profile = useActiveProfile();
   const addInvoice = useAppStore((s) => s.addInvoice);
+  const payInvoice = useAppStore((s) => s.payInvoice);
   const showToast = useAppStore((s) => s.showToast);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const [payingInvoiceId, setPayingInvoiceId] = useState<string | null>(null);
 
   const [invoiceType, setInvoiceType] = useState<"paye" | "achat">("paye");
   const [clientName, setClientName] = useState("");
@@ -183,7 +186,7 @@ export function InvoiceScreen({ view }: { view: "list" | "create" }) {
 
   if (view === "list") {
     return (
-      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 140 }}>
         <View className="px-4 pt-4">
           <View className="flex-row items-center justify-between mb-4">
             <View className="flex-1">
@@ -296,12 +299,33 @@ export function InvoiceScreen({ view }: { view: "list" | "create" }) {
                         </Text>
                       </View>
                     </View>
-                    <TouchableOpacity
-                      onPress={() => handleDownloadPdf(inv)}
-                      className="h-10 w-10 items-center justify-center bg-white border border-slate-200 rounded-xl ml-2"
-                    >
-                      <Download size={18} color="#4338CA" />
-                    </TouchableOpacity>
+                    <View className="flex-row items-center gap-2 ml-2">
+                      {inv.status === "draft" && (
+                        <TouchableOpacity
+                          onPress={async () => {
+                            setPayingInvoiceId(inv.id);
+                            try {
+                              await payInvoice(inv.id);
+                            } finally {
+                              setPayingInvoiceId(null);
+                            }
+                          }}
+                          disabled={payingInvoiceId === inv.id}
+                          className="h-10 px-3 flex-row items-center justify-center gap-1.5 bg-green-50 border border-green-200 rounded-xl"
+                        >
+                          <Check size={14} color="#15803D" />
+                          <Text className="text-[11px] font-black text-green-700 uppercase tracking-wider">
+                            {payingInvoiceId === inv.id ? "..." : "Payer"}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                      <TouchableOpacity
+                        onPress={() => handleDownloadPdf(inv)}
+                        className="h-10 w-10 items-center justify-center bg-white border border-slate-200 rounded-xl"
+                      >
+                        <Download size={18} color="#4338CA" />
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 );
               })
@@ -321,7 +345,7 @@ export function InvoiceScreen({ view }: { view: "list" | "create" }) {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
-      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 140 }}>
         <View className="px-4 pt-4">
           <TouchableOpacity
             onPress={() => setActiveTab("invoices")}

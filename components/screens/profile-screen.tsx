@@ -1,5 +1,5 @@
-import React from "react";
-import { View, Text, ScrollView } from "react-native";
+import React, { useState } from "react";
+import { View, Text, ScrollView, Alert } from "react-native";
 import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import {
@@ -11,18 +11,59 @@ import {
   MapPin,
   Fingerprint,
   FileText,
+  HeartPulse,
+  DatabaseZap,
 } from "lucide-react-native";
 import { useActiveProfile, useAppStore } from "../../store/app-store";
+import { resetDatabase } from "../../db";
 
 export function ProfileScreen() {
   const profile = useActiveProfile();
   const logout = useAppStore((s) => s.logout);
   const setActiveTab = useAppStore((s) => s.setActiveTab);
+  const hydrate = useAppStore((s) => s.hydrate);
+  const showToast = useAppStore((s) => s.showToast);
+  const [isResetting, setIsResetting] = useState(false);
 
   if (!profile) return null;
 
+  const handleResetDb = () => {
+    Alert.alert(
+      "Réinitialiser la base locale ?",
+      "Toutes les données seront effacées et remplacées par les fixtures d'origine. Vous serez déconnecté.",
+      [
+        { text: "Annuler", style: "cancel" },
+        {
+          text: "Réinitialiser",
+          style: "destructive",
+          onPress: async () => {
+            setIsResetting(true);
+            try {
+              await resetDatabase();
+              await hydrate();
+              logout();
+              showToast({
+                title: "Base réinitialisée",
+                description: "Fixtures restaurées.",
+                variant: "success",
+              });
+            } catch (e) {
+              showToast({
+                title: "Erreur",
+                description: e instanceof Error ? e.message : "Réinitialisation impossible.",
+                variant: "destructive",
+              });
+            } finally {
+              setIsResetting(false);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   return (
-    <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 24 }}>
+    <ScrollView className="flex-1 bg-slate-50" contentContainerStyle={{ paddingBottom: 140 }}>
       <View className="px-4 pt-4">
         <View className="mb-4">
           <Text className="text-xl font-black text-slate-900">Mon Profil</Text>
@@ -115,12 +156,25 @@ export function ProfileScreen() {
             <Text className="text-sm font-bold text-indigo-600">Mes documents</Text>
           </Button>
 
-          <Button variant="outline" className="mb-2 h-11 justify-start">
-            <Text className="text-sm font-bold text-slate-700">Gérer les accès équipe</Text>
+          <Button
+            variant="outline"
+            className="mb-2 h-11 justify-start"
+            onPress={() => setActiveTab("insurances")}
+          >
+            <HeartPulse size={16} color="#4338CA" />
+            <Text className="text-sm font-bold text-indigo-600">Couverture santé équipe</Text>
           </Button>
 
-          <Button variant="outline" className="mb-2 h-11 justify-start">
-            <Text className="text-sm font-bold text-slate-700">Préférences d'affichage</Text>
+          <Button
+            variant="outline"
+            className="mb-2 h-11 justify-start"
+            onPress={handleResetDb}
+            disabled={isResetting}
+          >
+            <DatabaseZap size={16} color="#B91C1C" />
+            <Text className="text-sm font-bold text-red-700">
+              {isResetting ? "Réinitialisation…" : "Réinitialiser la base (Démo)"}
+            </Text>
           </Button>
 
           <View className="border-t border-slate-100 pt-3 mt-1">

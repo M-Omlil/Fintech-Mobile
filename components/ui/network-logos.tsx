@@ -22,11 +22,3 @@ export const MastercardLogo = ({ width = 36, height = 22 }: LogoProps) => (
   </Svg>
 );
 
-export const AmexLogo = ({ width = 50, height = 16 }: LogoProps) => (
-  <Svg viewBox="0 0 130 42" fill="none" width={width} height={height}>
-    <Path
-      fill="white"
-      d="M21.8 30.4L28.5 12H36L42.7 30.4H37.8L36.1 25.6H28.3L26.6 30.4H21.8ZM29.7 21.6H34.7L32.2 14.1L29.7 21.6ZM47.3 30.4V12H55.4L59.5 21.4L63.6 12H71.7V30.4H67.6V17.5L62.5 26.7H56.5L51.4 17.5V30.4H47.3ZM74.4 30.4V12H88.3V16H78.5V19.1H87.2V23.1H78.5V26.4H88.6V30.4H74.4ZM92.0 30.4L98.0 21.2L92.0 12H97.0L100.5 17.6L104.0 12H109.0L103.0 21.2L109.0 30.4H104.0L100.5 24.8L97.0 30.4H92.0Z"
-    />
-  </Svg>
-);
