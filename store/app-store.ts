@@ -366,6 +366,7 @@ export const useAppStore = create<AppState>()(
           kind: "debit",
           createdAt: new Date().toISOString(),
           note: `${card.name} • ${card.maskedPan}`,
+          cardId: card.id,
         };
 
         const db = await getDb();

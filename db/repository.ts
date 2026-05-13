@@ -64,6 +64,8 @@ type TransactionRow = {
   kind: string;
   created_at: string;
   note: string | null;
+  card_id: string | null;
+  related_invoice_id: string | null;
 };
 
 type InvoiceRow = {
@@ -129,6 +131,8 @@ function mapTransaction(r: TransactionRow): BankingTransaction {
     kind: r.kind as BankingTransaction["kind"],
     createdAt: r.created_at,
     note: r.note ?? undefined,
+    cardId: r.card_id ?? undefined,
+    relatedInvoiceId: r.related_invoice_id ?? undefined,
   };
 }
 
@@ -238,8 +242,8 @@ export async function insertTransaction(
   tx: BankingTransaction
 ) {
   await db.runAsync(
-    `INSERT INTO transactions (id, profile_id, title, counterparty, amount, currency, kind, created_at, note)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO transactions (id, profile_id, title, counterparty, amount, currency, kind, created_at, note, card_id, related_invoice_id)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       tx.id,
       profileId,
@@ -250,6 +254,8 @@ export async function insertTransaction(
       tx.kind,
       tx.createdAt,
       tx.note ?? null,
+      tx.cardId ?? null,
+      tx.relatedInvoiceId ?? null,
     ]
   );
 }

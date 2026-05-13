@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   View,
   Text,
@@ -7,8 +7,10 @@ import {
   TextInput,
   Modal,
   Pressable,
-  ActivityIndicator,
+  Animated,
+  Easing,
 } from "react-native";
+import Svg, { Circle, G } from "react-native-svg";
 import {
   ArrowDownToLine,
   ArrowUpRight,
@@ -28,8 +30,122 @@ import { Card } from "../ui/card";
 import { Button } from "../ui/button";
 import { Input } from "../ui/input";
 import { Label } from "../ui/label";
+import { CompactDatePicker } from "../ui/compact-date-picker";
 import { useActiveProfile, useAppStore } from "../../store/app-store";
 import { cn } from "../../lib/utils";
+
+/* ------------------------------ Period filter ------------------------------ */
+
+type PeriodKey = "thisMonth" | "lastMonth" | "year" | "custom";
+type CustomRange = { start: Date | null; end: Date | null };
+
+function isDateInPeriod(dateStr: string, period: PeriodKey, custom: CustomRange): boolean {
+  const d = new Date(dateStr);
+  const now = new Date();
+
+  if (period === "thisMonth") {
+    return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+  }
+  if (period === "lastMonth") {
+    const lm = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return d.getFullYear() === lm.getFullYear() && d.getMonth() === lm.getMonth();
+  }
+  if (period === "year") {
+    return d.getFullYear() === now.getFullYear();
+  }
+  // custom
+  if (!custom.start || !custom.end) return true;
+  const s = new Date(custom.start);
+  s.setHours(0, 0, 0, 0);
+  const e = new Date(custom.end);
+  e.setHours(23, 59, 59, 999);
+  return d >= s && d <= e;
+}
+
+function periodLabel(period: PeriodKey, custom: CustomRange): string {
+  if (period === "thisMonth") return "Ce mois";
+  if (period === "lastMonth") return "Mois dernier";
+  if (period === "year") return "Cette année";
+  if (!custom.start || !custom.end) return "Personnalisé";
+  const fmt = (d: Date) => d.toLocaleDateString("fr-MA", { day: "2-digit", month: "short" });
+  return `${fmt(custom.start)} → ${fmt(custom.end)}`;
+}
+
+function PeriodFilter({
+  period,
+  onPeriodChange,
+  custom,
+  onCustomChange,
+}: {
+  period: PeriodKey;
+  onPeriodChange: (p: PeriodKey) => void;
+  custom: CustomRange;
+  onCustomChange: (r: CustomRange) => void;
+}) {
+  const items: { key: PeriodKey; label: string }[] = [
+    { key: "thisMonth", label: "Ce mois" },
+    { key: "lastMonth", label: "Mois dern." },
+    { key: "year", label: "Année" },
+    { key: "custom", label: "Perso." },
+  ];
+
+  return (
+    <View>
+      <View className="flex-row bg-slate-100 rounded-lg p-1">
+        {items.map((item) => (
+          <TouchableOpacity
+            key={item.key}
+            onPress={() => {
+              if (item.key === "custom" && (!custom.start || !custom.end)) {
+                // Sensible default: last 30 days
+                const end = new Date();
+                const start = new Date();
+                start.setDate(start.getDate() - 30);
+                onCustomChange({ start, end });
+              }
+              onPeriodChange(item.key);
+            }}
+            className={cn(
+              "flex-1 rounded-md py-1.5 items-center",
+              period === item.key ? "bg-white" : "bg-transparent"
+            )}
+          >
+            <Text
+              className={cn(
+                "text-[10px] font-bold uppercase",
+                period === item.key ? "text-indigo-600" : "text-slate-500"
+              )}
+            >
+              {item.label}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+      {period === "custom" && (
+        <View className="flex-row gap-2 mt-2">
+          <View className="flex-1">
+            <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Du
+            </Text>
+            <CompactDatePicker
+              value={custom.start}
+              onChange={(d) => onCustomChange({ ...custom, start: d })}
+            />
+          </View>
+          <View className="flex-1">
+            <Text className="text-[9px] font-bold text-slate-400 uppercase tracking-wider mb-1">
+              Au
+            </Text>
+            <CompactDatePicker
+              value={custom.end}
+              onChange={(d) => onCustomChange({ ...custom, end: d })}
+            />
+          </View>
+        </View>
+      )}
+    </View>
+  );
+}
 
 const getIconForTransaction = (title: string) => {
   const t = title.toLowerCase();
@@ -46,6 +162,90 @@ const CHART_BG_COLORS = ["#D9EEFF", "#FFE7D5", "#FFF7CC", "#DCFCE7", "#E0E7FF", 
 const themeBg = (theme: string) =>
   theme === "navy-gold" ? "bg-slate-900" : theme === "ocean-blue" ? "bg-blue-600" : "bg-emerald-600";
 
+const AnimatedCircle = Animated.createAnimatedComponent(Circle);
+
+/* ----------------------------- Donut chart ----------------------------- */
+// Renders one SVG arc per slice using stroke-dasharray. Chain offsets so
+// slices butt up against each other; rotate -90deg so the first slice
+// begins at 12 o'clock. Single Animated.Value sweeps every dashoffset
+// from "fully hidden" to its real position on mount / when slices change.
+
+type Slice = { percentage: number; color: string };
+
+function DonutChart({
+  slices,
+  size = 156,
+  strokeWidth = 22,
+}: {
+  slices: Slice[];
+  size?: number;
+  strokeWidth?: number;
+}) {
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const cx = size / 2;
+  const cy = size / 2;
+
+  // Animation: 0 → 1 over 700ms. Each slice's dash offset interpolates
+  // from (circumference + cumulative) [fully hidden] to (cumulative) [final].
+  const progress = useRef(new Animated.Value(0)).current;
+  const signature = slices.map((s) => `${s.color}:${s.percentage.toFixed(2)}`).join("|");
+
+  useEffect(() => {
+    progress.setValue(0);
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: 700,
+      easing: Easing.out(Easing.cubic),
+      useNativeDriver: true,
+    }).start();
+  }, [signature]);
+
+  let cumulative = 0;
+  const arcs = slices.map((slice, i) => {
+    const len = (slice.percentage / 100) * circumference;
+    const startOffset = cumulative;
+    cumulative += len;
+
+    const animatedOffset = progress.interpolate({
+      inputRange: [0, 1],
+      outputRange: [-(circumference + startOffset), -startOffset],
+    });
+
+    return (
+      <AnimatedCircle
+        key={`${slice.color}-${i}`}
+        cx={cx}
+        cy={cy}
+        r={radius}
+        stroke={slice.color}
+        strokeWidth={strokeWidth}
+        strokeLinecap="butt"
+        fill="transparent"
+        strokeDasharray={`${len} ${circumference - len}`}
+        strokeDashoffset={animatedOffset as unknown as number}
+      />
+    );
+  });
+
+  return (
+    <Svg width={size} height={size}>
+      <G rotation={-90} origin={`${cx}, ${cy}`}>
+        {/* Track */}
+        <Circle
+          cx={cx}
+          cy={cy}
+          r={radius}
+          stroke="#F1F5F9"
+          strokeWidth={strokeWidth}
+          fill="transparent"
+        />
+        {arcs}
+      </G>
+    </Svg>
+  );
+}
+
 export function DashboardScreen() {
   const profile = useActiveProfile();
   const setActiveTab = useAppStore((s) => s.setActiveTab);
@@ -54,7 +254,12 @@ export function DashboardScreen() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [chartMode, setChartMode] = useState<"debit" | "credit">("debit");
-  const [financePeriod, setFinancePeriod] = useState<"thisMonth" | "lastMonth" | "year">("thisMonth");
+
+  // Independent filters for "Résumé des Flux" and "Analytique"
+  const [flowsPeriod, setFlowsPeriod] = useState<PeriodKey>("thisMonth");
+  const [flowsCustom, setFlowsCustom] = useState<CustomRange>({ start: null, end: null });
+  const [analyticsPeriod, setAnalyticsPeriod] = useState<PeriodKey>("thisMonth");
+  const [analyticsCustom, setAnalyticsCustom] = useState<CustomRange>({ start: null, end: null });
 
   const [isSubAccountModalOpen, setIsSubAccountModalOpen] = useState(false);
   const [newSubAccountName, setNewSubAccountName] = useState("");
@@ -83,65 +288,31 @@ export function DashboardScreen() {
   }, [sortedTransactions, searchQuery]);
 
   const filteredFinanceData = useMemo(() => {
-    const now = new Date();
-    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-    const isDateInPeriod = (dateStr: string) => {
-      const d = new Date(dateStr);
-      if (financePeriod === "thisMonth") return d >= startOfThisMonth;
-      if (financePeriod === "lastMonth") return d >= startOfLastMonth && d <= endOfLastMonth;
-      if (financePeriod === "year") return d >= startOfYear;
-      return true;
-    };
-
+    const inPeriod = (s: string) => isDateInPeriod(s, flowsPeriod, flowsCustom);
     const expenses = safeTransactions
-      .filter((t) => t.kind === "debit" && isDateInPeriod(t.createdAt))
+      .filter((t) => t.kind === "debit" && inPeriod(t.createdAt))
       .reduce((sum, t) => sum + t.amount, 0);
-
     const paidInvoicesRevenue = (profile?.invoices || [])
-      .filter((inv) => inv.type === "paye" && inv.status === "paid" && isDateInPeriod(inv.createdAt))
+      .filter((inv) => inv.type === "paye" && inv.status === "paid" && inPeriod(inv.createdAt))
       .reduce((sum, inv) => sum + inv.totalTTC, 0);
-
-    const creditTransactionsRevenue = safeTransactions
-      .filter((t) => t.kind === "credit" && isDateInPeriod(t.createdAt))
+    // Credit transactions that aren't payments of an invoice (apport, refund, etc.)
+    // Invoice payments are already counted via paidInvoicesRevenue — counting both
+    // would double-book the revenue.
+    const orphanCreditsRevenue = safeTransactions
+      .filter((t) => t.kind === "credit" && !t.relatedInvoiceId && inPeriod(t.createdAt))
       .reduce((sum, t) => sum + t.amount, 0);
-
-    const revenues = paidInvoicesRevenue + creditTransactionsRevenue;
-
-    return { revenues, expenses };
-  }, [safeTransactions, profile?.invoices, financePeriod]);
+    return { revenues: paidInvoicesRevenue + orphanCreditsRevenue, expenses };
+  }, [safeTransactions, profile?.invoices, flowsPeriod, flowsCustom]);
 
   const tresoreriePeriodique = filteredFinanceData.revenues - filteredFinanceData.expenses;
 
-  const getPeriodLabel = () => {
-    if (financePeriod === "thisMonth") return "Ce mois";
-    if (financePeriod === "lastMonth") return "Mois dernier";
-    return "Cette année";
-  };
-
-  const { chartTags, chartTotal } = useMemo(() => {
-    const now = new Date();
-    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-    const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0);
-    const startOfYear = new Date(now.getFullYear(), 0, 1);
-
-    const isDateInPeriod = (dateStr: string) => {
-      const d = new Date(dateStr);
-      if (financePeriod === "thisMonth") return d >= startOfThisMonth;
-      if (financePeriod === "lastMonth") return d >= startOfLastMonth && d <= endOfLastMonth;
-      if (financePeriod === "year") return d >= startOfYear;
-      return true;
-    };
-
+  const { chartTags, chartTotal, chartSlices } = useMemo(() => {
+    const inPeriod = (s: string) => isDateInPeriod(s, analyticsPeriod, analyticsCustom);
     let total = 0;
     let grouped: Record<string, number> = {};
 
     if (chartMode === "debit") {
-      const targetTxns = safeTransactions.filter((t) => t.kind === "debit" && isDateInPeriod(t.createdAt));
+      const targetTxns = safeTransactions.filter((t) => t.kind === "debit" && inPeriod(t.createdAt));
       total = targetTxns.reduce((sum, t) => sum + t.amount, 0);
       grouped = targetTxns.reduce((acc, t) => {
         const cat = t.title || "Autre";
@@ -150,37 +321,44 @@ export function DashboardScreen() {
       }, {} as Record<string, number>);
     } else {
       const paidInvoices = (profile?.invoices || []).filter(
-        (inv) => inv.type === "paye" && inv.status === "paid" && isDateInPeriod(inv.createdAt)
+        (inv) => inv.type === "paye" && inv.status === "paid" && inPeriod(inv.createdAt)
       );
-      const creditTransactions = safeTransactions.filter((t) => t.kind === "credit" && isDateInPeriod(t.createdAt));
+      // Same dedupe as Résumé des Flux: drop credit txns that represent an invoice payment.
+      const orphanCredits = safeTransactions.filter(
+        (t) => t.kind === "credit" && !t.relatedInvoiceId && inPeriod(t.createdAt)
+      );
 
       paidInvoices.forEach((inv) => {
         const cat = inv.clientName || "Client Divers";
         grouped[cat] = (grouped[cat] || 0) + inv.totalTTC;
       });
 
-      creditTransactions.forEach((t) => {
+      orphanCredits.forEach((t) => {
         const cat = t.title || "Virement reçu";
         grouped[cat] = (grouped[cat] || 0) + t.amount;
       });
 
       total =
         paidInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0) +
-        creditTransactions.reduce((sum, t) => sum + t.amount, 0);
+        orphanCredits.reduce((sum, t) => sum + t.amount, 0);
     }
 
-    if (total === 0) return { chartTags: [], chartTotal: 0 };
+    if (total === 0) return { chartTags: [], chartTotal: 0, chartSlices: [] };
 
     const sortedCategories = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
-    const tags = sortedCategories.map(([label, amount], index) => {
+    const tags: { label: string; textColor: string; bgColor: string }[] = [];
+    const slices: { percentage: number; color: string }[] = [];
+
+    sortedCategories.forEach(([label, amount], index) => {
       const percentage = (amount / total) * 100;
       const color = CHART_COLORS[index % CHART_COLORS.length];
       const bgColor = CHART_BG_COLORS[index % CHART_BG_COLORS.length];
-      return { label: `${label} ${Math.round(percentage)}%`, textColor: color, bgColor };
+      tags.push({ label: `${label} ${Math.round(percentage)}%`, textColor: color, bgColor });
+      slices.push({ percentage, color });
     });
 
-    return { chartTags: tags, chartTotal: total };
-  }, [safeTransactions, profile?.invoices, chartMode, financePeriod]);
+    return { chartTags: tags, chartTotal: total, chartSlices: slices };
+  }, [safeTransactions, profile?.invoices, chartMode, analyticsPeriod, analyticsCustom]);
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -394,26 +572,13 @@ export function DashboardScreen() {
               Performance financière
             </Text>
           </View>
-          <View className="flex-row bg-slate-100 rounded-lg p-1 mb-5">
-            {(["thisMonth", "lastMonth", "year"] as const).map((p) => (
-              <TouchableOpacity
-                key={p}
-                onPress={() => setFinancePeriod(p)}
-                className={cn(
-                  "flex-1 rounded-md py-1.5 items-center",
-                  financePeriod === p ? "bg-white" : "bg-transparent"
-                )}
-              >
-                <Text
-                  className={cn(
-                    "text-[10px] font-bold uppercase",
-                    financePeriod === p ? "text-indigo-600" : "text-slate-500"
-                  )}
-                >
-                  {p === "thisMonth" ? "Ce mois" : p === "lastMonth" ? "Mois dernier" : "Année"}
-                </Text>
-              </TouchableOpacity>
-            ))}
+          <View className="mb-5">
+            <PeriodFilter
+              period={flowsPeriod}
+              onPeriodChange={setFlowsPeriod}
+              custom={flowsCustom}
+              onCustomChange={setFlowsCustom}
+            />
           </View>
 
           <View className="mb-4">
@@ -443,7 +608,7 @@ export function DashboardScreen() {
 
           <View className="border-t border-slate-100 pt-4 mt-2">
             <Text className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest mb-1.5">
-              Trésorerie ({getPeriodLabel()})
+              Trésorerie ({periodLabel(flowsPeriod, flowsCustom)})
             </Text>
             <View
               className={cn(
@@ -475,11 +640,27 @@ export function DashboardScreen() {
 
         {/* Analytique par catégorie */}
         <Card className="mb-4 p-5">
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-sm font-bold text-slate-900 flex-1">
-              Analytique <Text className="font-normal text-slate-500">({getPeriodLabel()})</Text>
+          <View className="mb-3">
+            <Text className="text-sm font-bold text-slate-900">
+              Analytique{" "}
+              <Text className="font-normal text-slate-500">
+                ({periodLabel(analyticsPeriod, analyticsCustom)})
+              </Text>
+            </Text>
+            <Text className="text-[10px] uppercase tracking-wider text-slate-500 font-medium mt-0.5">
+              Répartition par catégorie
             </Text>
           </View>
+
+          <View className="mb-3">
+            <PeriodFilter
+              period={analyticsPeriod}
+              onPeriodChange={setAnalyticsPeriod}
+              custom={analyticsCustom}
+              onCustomChange={setAnalyticsCustom}
+            />
+          </View>
+
           <View className="flex-row bg-slate-100 rounded-lg p-1 mb-4">
             {(["debit", "credit"] as const).map((m) => (
               <TouchableOpacity
@@ -503,14 +684,53 @@ export function DashboardScreen() {
           </View>
 
           <View className="items-center mb-4">
-            <View className="h-32 w-32 rounded-full bg-indigo-100 items-center justify-center">
-              <PieChart size={24} color="#4338CA" />
-              <Text className="text-[10px] text-slate-500 font-bold uppercase mt-1">
-                {chartMode === "debit" ? "Dépenses" : "Revenus"}
-              </Text>
-              <Text className="text-lg font-black text-slate-900">
-                {chartTotal.toLocaleString("fr-MA")}
-              </Text>
+            <View style={{ width: 156, height: 156, alignItems: "center", justifyContent: "center" }}>
+              {chartSlices.length > 0 ? (
+                <DonutChart slices={chartSlices} size={156} strokeWidth={22} />
+              ) : (
+                <View
+                  style={{
+                    width: 156,
+                    height: 156,
+                    borderRadius: 78,
+                    borderWidth: 22,
+                    borderColor: "#F1F5F9",
+                  }}
+                />
+              )}
+              <View
+                pointerEvents="none"
+                style={{
+                  position: "absolute",
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {chartSlices.length === 0 ? (
+                  <>
+                    <PieChart size={20} color="#94A3B8" />
+                    <Text className="text-[10px] text-slate-400 font-bold uppercase mt-1">
+                      Aucune donnée
+                    </Text>
+                  </>
+                ) : (
+                  <>
+                    <Text className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+                      {chartMode === "debit" ? "Dépenses" : "Revenus"}
+                    </Text>
+                    <Text className="text-lg font-black text-slate-900 mt-0.5">
+                      {chartTotal.toLocaleString("fr-MA")}
+                    </Text>
+                    <Text className="text-[9px] text-slate-400 font-bold uppercase tracking-widest mt-0.5">
+                      {profile.currency}
+                    </Text>
+                  </>
+                )}
+              </View>
             </View>
           </View>
 

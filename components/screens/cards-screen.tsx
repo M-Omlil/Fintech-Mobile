@@ -309,10 +309,19 @@ export function CardsScreen({ view }: { view: "list" | "create" }) {
   }, [profile]);
 
   const cards = profile?.cards || [];
+  // Per-card history. Falls back to recent debits (no cardId tag, e.g. legacy
+  // entries) so a brand-new card still shows the account's activity context.
   const cardTransactions = useMemo(() => {
     if (!profile) return [];
-    return profile.transactions.filter((t) => t.kind === "debit").slice(0, 6);
-  }, [profile]);
+    if (!detailedCard) return [];
+    const linked = profile.transactions.filter(
+      (t) => t.kind === "debit" && t.cardId === detailedCard.id
+    );
+    if (linked.length > 0) return linked.slice(0, 8);
+    return profile.transactions
+      .filter((t) => t.kind === "debit" && !t.cardId)
+      .slice(0, 6);
+  }, [profile, detailedCard]);
 
   const activeCount = useMemo(() => cards.filter((c) => c.status === "active").length, [cards]);
   const totalSpent = useMemo(() => cards.reduce((sum, c) => sum + (c.spent || 0), 0), [cards]);

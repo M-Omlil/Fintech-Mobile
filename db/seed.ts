@@ -53,9 +53,21 @@ export async function seedDatabase(db: SQLiteDatabase) {
 
       for (const t of profile.transactions) {
         await db.runAsync(
-          `INSERT OR REPLACE INTO transactions (id, profile_id, title, counterparty, amount, currency, kind, created_at, note)
-           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          [t.id, profile.id, t.title, t.counterparty, t.amount, t.currency, t.kind, t.createdAt, t.note ?? null]
+          `INSERT OR REPLACE INTO transactions (id, profile_id, title, counterparty, amount, currency, kind, created_at, note, card_id, related_invoice_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            t.id,
+            profile.id,
+            t.title,
+            t.counterparty,
+            t.amount,
+            t.currency,
+            t.kind,
+            t.createdAt,
+            t.note ?? null,
+            t.cardId ?? null,
+            t.relatedInvoiceId ?? null,
+          ]
         );
       }
 

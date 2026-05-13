@@ -66,9 +66,13 @@ CREATE TABLE IF NOT EXISTS transactions (
   kind TEXT NOT NULL CHECK (kind IN ('credit','debit')),
   created_at TEXT NOT NULL,
   note TEXT,
+  card_id TEXT,
+  related_invoice_id TEXT,
   FOREIGN KEY (profile_id) REFERENCES profiles(id) ON DELETE CASCADE
 );
 CREATE INDEX IF NOT EXISTS idx_transactions_profile ON transactions(profile_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_transactions_card ON transactions(card_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_invoice ON transactions(related_invoice_id);
 
 CREATE TABLE IF NOT EXISTS invoices (
   id TEXT PRIMARY KEY,
