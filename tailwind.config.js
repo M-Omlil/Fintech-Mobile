@@ -1,7 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 
 module.exports = {
-  // Supprimé: darkMode: ["class"] (NativeWind gère le dark mode différemment)
   content: [
     "./App.{js,jsx,ts,tsx}",
     "./components/**/*.{js,jsx,ts,tsx}",
@@ -9,6 +8,7 @@ module.exports = {
     "./services/**/*.{js,jsx,ts,tsx}",
     "./store/**/*.{js,jsx,ts,tsx}"
   ],
+  presets: [require("nativewind/preset")],
   theme: {
     extend: {
       colors: {

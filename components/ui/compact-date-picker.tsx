@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from "react";
 import { View, Text, TouchableOpacity, Modal, Pressable } from "react-native";
 import { CalendarDays, ChevronLeft, ChevronRight } from "lucide-react-native";
-import { cn } from "@/lib/utils";
+import { cn } from "../../lib/utils";
 
 type CompactDatePickerProps = {
   value: Date | null;
@@ -10,8 +10,8 @@ type CompactDatePickerProps = {
 
 const weekDays = ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
 const monthNames = [
-  "January", "February", "March", "April", "May", "June",
-  "July", "August", "September", "October", "November", "December"
+  "Janvier", "Février", "Mars", "Avril", "Mai", "Juin",
+  "Juillet", "Août", "Septembre", "Octobre", "Novembre", "Décembre"
 ];
 
 function isSameDay(a: Date, b: Date) {
@@ -19,7 +19,7 @@ function isSameDay(a: Date, b: Date) {
 }
 
 function formatDate(value: Date | null) {
-  if (!value) return "dd/mm/yyyy";
+  if (!value) return "jj/mm/aaaa";
   const day = `${value.getDate()}`.padStart(2, "0");
   const month = `${value.getMonth() + 1}`.padStart(2, "0");
   return `${day}/${month}/${value.getFullYear()}`;
@@ -60,30 +60,37 @@ export function CompactDatePicker({ value, onChange }: CompactDatePickerProps) {
 
   return (
     <View className="relative w-full">
-      {/* Bouton de sélection */}
       <TouchableOpacity
         activeOpacity={0.7}
-        onPress={() => setOpen(true)}
-        className="flex-row h-12 w-full items-center justify-between rounded-xl border border-[#EBF0FE] bg-white px-4"
+        onPress={() => {
+          setViewDate(value ?? new Date());
+          setOpen(true);
+        }}
+        className="flex-row h-12 w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4"
       >
-        <Text className={value ? "text-[#061438]" : "text-[#9CA3AF]"}>
+        <Text className={value ? "text-slate-900 text-[14px]" : "text-slate-400 text-[14px]"}>
           {formatDate(value)}
         </Text>
         <CalendarDays size={18} color="#9CA3AF" />
       </TouchableOpacity>
 
-      {/* Le Calendrier Pop-up via Modal Native */}
-      <Modal visible={open} transparent animationType="fade">
-        <Pressable 
-          className="flex-1 items-center justify-center bg-black/20 px-4" 
+      <Modal visible={open} transparent animationType="fade" onRequestClose={() => setOpen(false)}>
+        <Pressable
+          className="flex-1 items-center justify-center bg-black/40 px-4"
           onPress={() => setOpen(false)}
         >
-          {/* Empêche le clic à l'intérieur de fermer le modal */}
-          <Pressable className="w-full max-w-[320px] rounded-2xl bg-white p-4 shadow-lg">
-            
-            {/* Header du calendrier */}
+          <Pressable
+            className="w-full max-w-[340px] rounded-2xl bg-white p-4"
+            style={{
+              shadowColor: "#000",
+              shadowOffset: { width: 0, height: 4 },
+              shadowOpacity: 0.2,
+              shadowRadius: 12,
+              elevation: 10,
+            }}
+          >
             <View className="mb-4 flex-row items-center justify-between px-1">
-              <Text className="text-base font-bold text-[#061438]">
+              <Text className="text-base font-bold text-slate-900">
                 {monthNames[viewDate.getMonth()]} {viewDate.getFullYear()}
               </Text>
               <View className="flex-row items-center gap-2">
@@ -102,23 +109,19 @@ export function CompactDatePicker({ value, onChange }: CompactDatePickerProps) {
               </View>
             </View>
 
-            {/* Jours de la semaine */}
             <View className="flex-row flex-wrap mb-2">
               {weekDays.map((label) => (
-                <View key={label} className="w-[14.28%] items-center">
-                  <Text className="text-[12px] font-bold text-[#9CA3AF] uppercase">
-                    {label}
-                  </Text>
+                <View key={label} className="items-center" style={{ width: `${100 / 7}%` }}>
+                  <Text className="text-[11px] font-bold text-slate-400 uppercase">{label}</Text>
                 </View>
               ))}
             </View>
 
-            {/* Grille des jours */}
             <View className="flex-row flex-wrap">
               {days.map(({ date, currentMonth }) => {
                 const selected = value && isSameDay(date, value);
                 return (
-                  <View key={date.toISOString()} className="w-[14.28%] p-0.5 aspect-square">
+                  <View key={date.toISOString()} className="p-0.5 aspect-square" style={{ width: `${100 / 7}%` }}>
                     <TouchableOpacity
                       activeOpacity={0.7}
                       onPress={() => {
@@ -128,17 +131,19 @@ export function CompactDatePicker({ value, onChange }: CompactDatePickerProps) {
                       }}
                       className={cn(
                         "flex-1 items-center justify-center rounded-xl",
-                        selected 
-                          ? "bg-[#1DABFC]" // mylegal-ocean
-                          : currentMonth ? "bg-transparent" : "bg-transparent"
+                        selected ? "bg-indigo-600" : "bg-transparent"
                       )}
                     >
-                      <Text className={cn(
-                        "text-[13px]",
-                        selected 
-                          ? "font-bold text-white" 
-                          : currentMonth ? "text-[#061438]" : "text-[#D1D5DB]"
-                      )}>
+                      <Text
+                        className={cn(
+                          "text-[13px]",
+                          selected
+                            ? "font-bold text-white"
+                            : currentMonth
+                            ? "text-slate-900"
+                            : "text-slate-300"
+                        )}
+                      >
                         {date.getDate()}
                       </Text>
                     </TouchableOpacity>
@@ -147,7 +152,6 @@ export function CompactDatePicker({ value, onChange }: CompactDatePickerProps) {
               })}
             </View>
 
-            {/* Footer du calendrier */}
             <View className="mt-4 flex-row items-center justify-between border-t border-slate-100 pt-3">
               <TouchableOpacity
                 onPress={() => {
@@ -158,13 +162,12 @@ export function CompactDatePicker({ value, onChange }: CompactDatePickerProps) {
                 }}
                 className="px-3 py-2"
               >
-                <Text className="text-sm font-bold text-[#1D4ED8]">Aujourd'hui</Text>
+                <Text className="text-sm font-bold text-indigo-600">Aujourd'hui</Text>
               </TouchableOpacity>
               <TouchableOpacity onPress={() => setOpen(false)} className="px-3 py-2">
-                <Text className="text-sm font-bold text-[#6B7280]">Fermer</Text>
+                <Text className="text-sm font-bold text-slate-500">Fermer</Text>
               </TouchableOpacity>
             </View>
-
           </Pressable>
         </Pressable>
       </Modal>

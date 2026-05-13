@@ -1,14 +1,13 @@
 import React from "react";
 import Svg, { Path, Circle } from "react-native-svg";
-import { StyleProp, ViewStyle } from "react-native";
 
 type LogoProps = {
-  className?: string;
-  style?: StyleProp<ViewStyle>;
+  width?: number;
+  height?: number;
 };
 
-export const VisaLogo = ({ className, style }: LogoProps) => (
-  <Svg viewBox="0 0 130 42" fill="none" className={className} style={style}>
+export const VisaLogo = ({ width = 50, height = 16 }: LogoProps) => (
+  <Svg viewBox="0 0 130 42" fill="none" width={width} height={height}>
     <Path fill="white" d="M32.4128 41.0541H21.1928L12.7791 8.95549C12.3798 7.47895 11.5319 6.17361 10.2846 5.55839C7.17185 4.01231 3.74183 2.78186 0 2.16129V0.925493H18.0746C20.5691 0.925493 22.4401 2.78186 22.7519 4.93782L27.1174 28.0916L38.3319 0.925493H49.2401L32.4128 41.0541Z" />
     <Path fill="white" d="M55.4767 41.0541H44.8803L53.6058 0.925493H64.2022L55.4767 41.0541Z" />
     <Path fill="white" d="M77.9109 12.0423C78.2227 9.88101 80.0936 8.64522 82.2763 8.64522C85.7063 8.33493 89.4427 8.9555 92.5609 10.4962L94.4318 1.85637C91.3136 0.620572 87.8836 0 84.7709 0C74.4863 0 67.0026 5.5584 67.0026 13.2728C67.0026 19.1415 72.3036 22.2229 76.0454 24.0793C80.0936 25.9303 81.6527 27.1661 81.3409 29.0171C81.3409 31.7936 78.2227 33.0294 75.11 33.0294C71.3681 33.0294 67.6263 32.1039 64.2017 30.5578L62.3308 39.2031C66.0727 40.7438 70.1208 41.3644 73.8627 41.3644C85.3945 41.6693 92.5609 36.1163 92.5609 27.7813C92.5609 17.2851 77.9109 16.6699 77.9109 12.0423Z" />
@@ -16,15 +15,15 @@ export const VisaLogo = ({ className, style }: LogoProps) => (
   </Svg>
 );
 
-export const MastercardLogo = ({ className, style }: LogoProps) => (
-  <Svg viewBox="0 0 24 24" className={className} style={style}>
+export const MastercardLogo = ({ width = 36, height = 22 }: LogoProps) => (
+  <Svg viewBox="0 0 24 24" width={width} height={height}>
     <Circle cx="7" cy="12" r="7" fill="#EB001B" />
-    <Circle cx="17" cy="12" r="7" fill="#F79E1B" fillOpacity="0.8" />
+    <Circle cx="17" cy="12" r="7" fill="#F79E1B" fillOpacity={0.8} />
   </Svg>
 );
 
-export const AmexLogo = ({ className, style }: LogoProps) => (
-  <Svg viewBox="0 0 130 42" fill="none" className={className} style={style}>
+export const AmexLogo = ({ width = 50, height = 16 }: LogoProps) => (
+  <Svg viewBox="0 0 130 42" fill="none" width={width} height={height}>
     <Path
       fill="white"
       d="M21.8 30.4L28.5 12H36L42.7 30.4H37.8L36.1 25.6H28.3L26.6 30.4H21.8ZM29.7 21.6H34.7L32.2 14.1L29.7 21.6ZM47.3 30.4V12H55.4L59.5 21.4L63.6 12H71.7V30.4H67.6V17.5L62.5 26.7H56.5L51.4 17.5V30.4H47.3ZM74.4 30.4V12H88.3V16H78.5V19.1H87.2V23.1H78.5V26.4H88.6V30.4H74.4ZM92.0 30.4L98.0 21.2L92.0 12H97.0L100.5 17.6L104.0 12H109.0L103.0 21.2L109.0 30.4H104.0L100.5 24.8L97.0 30.4H92.0Z"

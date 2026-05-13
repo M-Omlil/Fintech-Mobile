@@ -1,62 +1,74 @@
 import React from "react";
-import { TouchableOpacity, Text, TouchableOpacityProps } from "react-native";
-import { cn } from "@/lib/utils";
+import { Pressable, Text, View, ActivityIndicator, PressableProps } from "react-native";
+import { cn } from "../../lib/utils";
 
 type ButtonVariant = "default" | "secondary" | "ghost" | "outline";
 
-type ButtonProps = TouchableOpacityProps & {
+type ButtonProps = Omit<PressableProps, "children"> & {
   variant?: ButtonVariant;
   fullWidth?: boolean;
-  children: React.ReactNode;
+  className?: string;
+  textClassName?: string;
+  loading?: boolean;
+  children?: React.ReactNode;
 };
 
 export function Button({
   className,
+  textClassName,
   variant = "default",
   fullWidth,
+  disabled,
+  loading,
   children,
   ...props
 }: ButtonProps) {
-  // Définition des couleurs de texte selon la variante
-  const getTextColorClass = () => {
-    switch (variant) {
-      case "default": return "text-white";
-      case "secondary": return "text-[#061438]"; // mylegal-navy
-      case "ghost": return "text-[#061438]";
-      case "outline": return "text-slate-700";
-      default: return "text-white";
-    }
-  };
+  const baseClass = "flex-row items-center justify-center rounded-xl px-4 py-3";
+  const variantClass =
+    variant === "default"
+      ? "bg-indigo-600 active:bg-indigo-700"
+      : variant === "secondary"
+      ? "bg-slate-100 active:bg-slate-200"
+      : variant === "outline"
+      ? "border border-slate-200 bg-white active:bg-slate-50"
+      : "bg-transparent active:bg-slate-100";
+
+  const baseTextClass =
+    variant === "default"
+      ? "text-white text-sm font-bold"
+      : variant === "secondary"
+      ? "text-slate-900 text-sm font-bold"
+      : variant === "outline"
+      ? "text-slate-700 text-sm font-bold"
+      : "text-slate-700 text-sm font-bold";
 
   return (
-    <TouchableOpacity
-      activeOpacity={0.7}
+    <Pressable
+      disabled={disabled || loading}
       className={cn(
-        "flex-row items-center justify-center gap-2 rounded-xl px-4 py-3.5 transition-all",
-        props.disabled && "opacity-60",
-        variant === "default" && "bg-[#1DABFC] shadow-sm", // mylegal-ocean
-        variant === "secondary" && "bg-[#EBF0FE]", // mylegal-pale
-        variant === "ghost" && "bg-transparent",
-        variant === "outline" && "border border-slate-200 bg-transparent",
+        baseClass,
+        variantClass,
         fullWidth && "w-full",
+        (disabled || loading) && "opacity-60",
         className
       )}
       {...props}
     >
-      {/* React Native exige que le texte soit dans <Text>. 
-        On map les children pour emballer automatiquement les strings.
-      */}
-      {React.Children.map(children, (child) => {
-        if (typeof child === "string" || typeof child === "number") {
-          return (
-            <Text className={cn("text-[14px] font-bold", getTextColorClass())}>
-              {child}
-            </Text>
-          );
-        }
-        // Si c'est une icône (Lucide), on la rend telle quelle
-        return child;
-      })}
-    </TouchableOpacity>
+      {loading ? (
+        <ActivityIndicator
+          size="small"
+          color={variant === "default" ? "#FFFFFF" : "#1F2937"}
+        />
+      ) : (
+        <View className="flex-row items-center justify-center gap-2">
+          {React.Children.map(children, (child) => {
+            if (typeof child === "string" || typeof child === "number") {
+              return <Text className={cn(baseTextClass, textClassName)}>{child}</Text>;
+            }
+            return child;
+          })}
+        </View>
+      )}
+    </Pressable>
   );
 }

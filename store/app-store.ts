@@ -1,5 +1,3 @@
-"use client";
-
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import {
@@ -14,11 +12,13 @@ import {
   type TabKey,
   type TransferPayload,
   type EmployeeInsurance,
-  type SubAccount // <-- NOUVEL IMPORT
-} from "@/services/mock-data";
-import { createInvoice, createTransfer, handleDocumentAction, loginWithCredentials, loginWithProfile, markInvoicePaid } from "@/services/mock-api";
+  type SubAccount
+} from "../services/mock-data";
+import { createInvoice, createTransfer, handleDocumentAction, loginWithCredentials, loginWithProfile, markInvoicePaid } from "../services/mock-api";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createJSONStorage } from 'zustand/middleware';
+
+const generateId = () => Date.now().toString(36) + Math.random().toString(36).substring(2);
   
 export type ToastVariant = "default" | "success" | "warning" | "destructive";
 
@@ -68,7 +68,7 @@ function updateProfile(state: AppState, profileId: string, updater: (profile: Ba
 
 function buildTransferTransaction(payload: TransferPayload): BankingTransaction {
   return {
-    id: crypto.randomUUID(),
+    id: generateId(),
     title: "Virement émis",
     counterparty: payload.beneficiary,
     amount: formatAmount(payload.amount),
@@ -92,9 +92,9 @@ export const useAppStore = create<AppState>()(
       setActiveTab: (tab) => set({ activeTab: tab }),
       
       showToast: (toast) => {
-        const id = crypto.randomUUID();
+        const id = generateId();
         set((state) => ({ toasts: [...state.toasts, { id, ...toast }] }));
-        window.setTimeout(() => {
+        setTimeout(() => {
           set((state) => ({ toasts: state.toasts.filter((item) => item.id !== id) }));
         }, 3200);
       },
