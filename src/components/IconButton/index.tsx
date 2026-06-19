@@ -1,5 +1,5 @@
-import React from "react";
-import { Pressable, View, type ViewStyle } from "react-native";
+import React, { useRef } from "react";
+import { Animated, Pressable, type ViewStyle } from "react-native";
 
 import type { TileIcon } from "@components/IconTile";
 import { Text } from "@components/Text";
@@ -17,6 +17,8 @@ export type IconButtonProps = {
   caption?: string;
   size?: number;
   disabled?: boolean;
+  /** Play a celebratory scale "pop" on press (e.g. marquer payée). */
+  animateOnPress?: boolean;
   style?: ViewStyle;
 };
 
@@ -33,11 +35,27 @@ export function IconButton({
   caption,
   size,
   disabled = false,
+  animateOnPress = false,
   style,
 }: IconButtonProps) {
   const theme = useTheme();
   const styles = useStyles();
   const dimension = size ?? theme.sizing.actionButton;
+
+  const scale = useRef(new Animated.Value(1)).current;
+  const pop = () => {
+    scale.setValue(0.82);
+    Animated.spring(scale, {
+      toValue: 1,
+      friction: 4,
+      tension: 160,
+      useNativeDriver: true,
+    }).start();
+  };
+  const handlePress = () => {
+    if (animateOnPress && !disabled) pop();
+    onPress?.();
+  };
 
   const iconColor =
     variant === "dark"
@@ -55,7 +73,7 @@ export function IconButton({
 
   return (
     <Pressable
-      onPress={onPress}
+      onPress={handlePress}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={caption ? `${label}, ${caption}` : label}
@@ -66,9 +84,9 @@ export function IconButton({
         style,
       ]}
     >
-      <View style={circleStyle}>
+      <Animated.View style={[circleStyle, { transform: [{ scale }] }]}>
         <Icon size={Math.round(dimension * 0.42)} color={iconColor} strokeWidth={1.75} />
-      </View>
+      </Animated.View>
       {caption ? (
         <Text variant="caption" color="textSecondary" style={styles.caption}>
           {caption}

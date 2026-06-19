@@ -107,7 +107,8 @@ export function buildAmanoSeed(now: Date = new Date()) {
     {
       id: "acc-main",
       name: "Compte principal",
-      balance: 100000,
+      // Solde = encaissement 100 000 − dépenses réglées (4 680 + 20 000 + 1 000 + 8 500) = 65 820.
+      balance: 100000 - 4680 - 20000 - 1000 - 8500,
       currency: "MAD",
       status: "active",
       isMain: true,
@@ -276,6 +277,7 @@ export function buildAmanoSeed(now: Date = new Date()) {
     amount: number,
     n: number,
     receipt: Transaction["receipt"] = "added",
+    method: Transaction["method"] = "transfer",
   ): Transaction => ({
     id,
     label,
@@ -286,7 +288,7 @@ export function buildAmanoSeed(now: Date = new Date()) {
     date: daysBack(now, n),
     status: "executed",
     receipt,
-    method: "transfer",
+    method,
     accountId: "acc-main",
   });
   const transactions: Transaction[] = [
@@ -300,7 +302,8 @@ export function buildAmanoSeed(now: Date = new Date()) {
     ),
     tx("tx-v-mylegal", "Virement MyLegal", "MyLegal", "depense", 4680, 1),
     tx("tx-v-uptoconnect", "Virement Uptoconnect SARL", "Uptoconnect SARL", "depense", 20000, 2),
-    tx("tx-iam-fibre", "Maroc Telecom — Fibre optique", "Maroc Telecom", "depense", 1000, 3),
+    // Paiement par carte sur terminal — libellé façon relevé bancaire (TPE + carte + marchand).
+    tx("tx-iam-fibre", "TPE INWI ••6624", "INWI", "depense", 1000, 3, "added", "card"),
     tx(
       "tx-achat-materiel",
       "Achat matériel informatique",

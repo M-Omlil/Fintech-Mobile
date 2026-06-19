@@ -169,17 +169,6 @@ export function ClassementScreen() {
         </View>
       ) : month == null ? (
         <View style={styles.list}>
-          <Button
-            variant="secondary"
-            label={t("invoicing.classement.shareAccountant")}
-            leadingIcon={Send}
-            onPress={() =>
-              shareToAccountant(
-                inYear,
-                `Comptable-${category ? CAT_CODE[category] : "DOC"}-${year}.pdf`,
-              )
-            }
-          />
           {months.map((m) => (
             <Row
               key={m}
@@ -192,6 +181,18 @@ export function ClassementScreen() {
               onPress={() => setMonth(m)}
             />
           ))}
+          <Button
+            variant="primary"
+            label={t("invoicing.classement.shareAccountant")}
+            leadingIcon={Send}
+            style={styles.shareAccountant}
+            onPress={() =>
+              shareToAccountant(
+                inYear,
+                `Comptable-${category ? CAT_CODE[category] : "DOC"}-${year}.pdf`,
+              )
+            }
+          />
         </View>
       ) : (
         <View style={styles.list}>
@@ -213,20 +214,6 @@ export function ClassementScreen() {
                 : t("invoicing.classement.orderOldest")}
             </Text>
           </Pressable>
-
-          <Button
-            variant="secondary"
-            label={t("invoicing.classement.shareAccountant")}
-            leadingIcon={Send}
-            onPress={() =>
-              shareToAccountant(
-                inYear.filter((d) => new Date(d.date).getMonth() === month),
-                `Comptable-${category ? CAT_CODE[category] : "DOC"}-${year}-${
-                  month != null ? formatMonthName(month) : ""
-                }.pdf`,
-              )
-            }
-          />
 
           {files.length === 0 ? (
             <Empty />
@@ -252,6 +239,23 @@ export function ClassementScreen() {
               </Pressable>
             ))
           )}
+
+          {files.length > 0 ? (
+            <Button
+              variant="primary"
+              label={t("invoicing.classement.shareAccountant")}
+              leadingIcon={Send}
+              style={styles.shareAccountant}
+              onPress={() =>
+                shareToAccountant(
+                  inYear.filter((d) => new Date(d.date).getMonth() === month),
+                  `Comptable-${category ? CAT_CODE[category] : "DOC"}-${year}-${
+                    month != null ? formatMonthName(month) : ""
+                  }.pdf`,
+                )
+              }
+            />
+          ) : null}
         </View>
       )}
     </Screen>
@@ -314,5 +318,6 @@ const useStyles = makeStyles((t) => ({
   },
   fileRow: { flexDirection: "row", alignItems: "center", gap: t.spacing.md },
   fileInfo: { flex: 1, gap: 2 },
+  shareAccountant: { marginTop: t.spacing.md },
   empty: { minHeight: 280 },
 }));

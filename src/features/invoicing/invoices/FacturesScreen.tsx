@@ -170,6 +170,7 @@ export function FacturesScreen() {
                       icon={Check}
                       variant="dark"
                       size={48}
+                      animateOnPress
                       label={t("invoicing.invoices.markPaid")}
                       onPress={() => {
                         setInvoiceStatus(invoice.id, "payee");

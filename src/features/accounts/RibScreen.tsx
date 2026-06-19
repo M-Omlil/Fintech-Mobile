@@ -106,7 +106,13 @@ export function RibScreen() {
         </Card>
       </View>
 
-      <Button variant="primary" label={t("rib.share")} leadingIcon={Share2} onPress={onShare} />
+      <Button
+        variant="primary"
+        label={t("rib.share")}
+        leadingIcon={Share2}
+        onPress={onShare}
+        style={styles.shareBtn}
+      />
     </Screen>
   );
 }
@@ -133,4 +139,5 @@ const useStyles = makeStyles((t) => ({
   ribValue: { flexShrink: 1 },
   copyBtn: { flexDirection: "row", alignItems: "center", gap: t.spacing.xs },
   pressed: { opacity: 0.6 },
+  shareBtn: { marginTop: t.spacing.lg },
 }));
