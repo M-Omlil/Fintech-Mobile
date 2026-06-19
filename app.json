@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "fintech-mobile",
-    "slug": "fintech-mobile",
+    "name": "Amano",
+    "slug": "amano",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -10,10 +10,11 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#F3F6F9"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.m.omlil.fintechmobile"
     },
     "android": {
       "adaptiveIcon": {
@@ -29,11 +30,13 @@
     },
     "extra": {
       "eas": {
-        "projectId": "705dfc44-3947-41a5-8e40-65b3a0b5d3eb"
+        "projectId": "45b387da-bda2-40fb-aa32-a1eb600cb84c"
       }
     },
     "plugins": [
-      "expo-sqlite"
-    ]
+      "expo-sqlite",
+      "expo-font"
+    ],
+    "owner": "mylegal-01"
   }
 }
