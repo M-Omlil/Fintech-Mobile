@@ -1,3 +1,4 @@
+import { useNavigation } from "@react-navigation/native";
 import { SlidersHorizontal } from "lucide-react-native";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -11,10 +12,11 @@ import { makeStyles } from "@theme/index";
 import { FilterSheetContent } from "./components/FilterSheet";
 import { TransactionRow } from "./components/TransactionRow";
 
-/** Transactions tab (Section 6.3) — list + filter sheet. */
+/** Transactions list (Section 6.3) — list + filter sheet. */
 export function TransactionsScreen() {
   const { t } = useTranslation();
   const styles = useStyles();
+  const navigation = useNavigation();
 
   const [filter, setFilter] = useState<TransactionFilter>({});
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -30,6 +32,7 @@ export function TransactionsScreen() {
     <Screen>
       <ScreenHeader
         title={t("transactions.title")}
+        onBack={() => navigation.goBack()}
         rightActions={
           <IconButton
             icon={SlidersHorizontal}

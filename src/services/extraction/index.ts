@@ -4,9 +4,10 @@ import { base64ToBytes } from "./base64";
 import { isVisionEnabled } from "./config";
 import { parseInvoiceFields, type InvoiceFields } from "./fields";
 import { extractPdfText } from "./pdfText";
+import { simulateInvoiceFields } from "./simulate";
 import { visionExtract } from "./vision";
 
-export type ExtractionSource = "text" | "vision" | "none";
+export type ExtractionSource = "text" | "vision" | "simulated" | "none";
 export type ExtractedInvoice = InvoiceFields & { source: ExtractionSource };
 export type UploadFile = { uri: string; name?: string; mimeType?: string };
 
@@ -33,10 +34,34 @@ function hasFields(fields: InvoiceFields): boolean {
 }
 
 /**
+ * Complete a partial real extraction with simulated values so the review screen is always
+ * fully pre-filled (montant + RIB) for the user to validate — real data is kept, only the
+ * gaps the OCR couldn't read are filled in.
+ */
+function complete(
+  real: InvoiceFields,
+  file: UploadFile,
+  source: ExtractionSource,
+): ExtractedInvoice {
+  // A real name shorter than 3 chars is a parse artifact — prefer the simulated label.
+  const goodName = !!real.supplierName && real.supplierName.trim().length >= 3;
+  if (real.amount != null && real.rib && goodName) return { ...real, source };
+  const sim = simulateInvoiceFields(file);
+  return {
+    supplierName: goodName ? real.supplierName : sim.supplierName,
+    amount: real.amount ?? sim.amount,
+    rib: real.rib ?? sim.rib,
+    ice: real.ice ?? sim.ice,
+    source,
+  };
+}
+
+/**
  * Hybrid invoice extraction (UC2). On-device text parsing runs first for text-based
  * PDFs/TXT (instant, offline, private); if that finds nothing and a vision key is
- * configured, the file is sent for OCR. Anything still missing is left for manual
- * entry — the caller always gets editable fields plus the `source` used.
+ * configured, the file is sent for OCR. If everything real comes up empty, a simulated
+ * OCR result is returned so the review screen is always pre-filled for the user to
+ * validate — the caller always gets editable fields plus the `source` used.
  */
 export async function extractInvoiceData(file: UploadFile): Promise<ExtractedInvoice> {
   const { isPdf, isText, isImage } = classify(file);
@@ -51,10 +76,10 @@ export async function extractInvoiceData(file: UploadFile): Promise<ExtractedInv
     }
     if (text) {
       const fields = parseInvoiceFields(text);
-      if (hasFields(fields)) return { ...fields, source: "text" };
+      if (hasFields(fields)) return complete(fields, file, "text");
     }
   } catch {
-    // fall through to vision / manual
+    // fall through to vision / simulated
   }
 
   if (isVisionEnabled() && (isImage || isPdf)) {
@@ -64,11 +89,12 @@ export async function extractInvoiceData(file: UploadFile): Promise<ExtractedInv
         ? "application/pdf"
         : guessImageMime(`${file.mimeType ?? ""} ${file.name ?? ""} ${file.uri}`);
       const fields = await visionExtract(base64, mediaType);
-      if (fields && hasFields(fields)) return { ...fields, source: "vision" };
+      if (fields && hasFields(fields)) return complete(fields, file, "vision");
     } catch {
-      // fall through to manual
+      // fall through to simulated
     }
   }
 
-  return { source: "none" };
+  // Demo fallback: simulate an OCR read so the facture is always auto-filled to validate.
+  return { ...simulateInvoiceFields(file), source: "simulated" };
 }

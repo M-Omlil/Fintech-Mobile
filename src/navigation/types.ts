@@ -6,6 +6,10 @@ export type StubKey =
   | "checkDeposit"
   | "paymentLinks"
   | "domiciliation"
+  | "capitalIncrease"
+  | "changeManager"
+  | "changeHeadquarters"
+  | "trademarkProtection"
   | "expenseReports"
   | "helpCenter"
   | "contactUs";
@@ -19,8 +23,8 @@ export type AuthStackParamList = {
 /** The four bottom tabs. */
 export type TabParamList = {
   Home: undefined;
-  Transactions: undefined;
-  Cards: undefined;
+  Facturation: undefined;
+  Dashboard: undefined;
   Menu: undefined;
 };
 
@@ -34,6 +38,8 @@ export type RootStackParamList = {
   Rib: undefined;
   Documents: undefined;
   Classement: undefined;
+  Transactions: undefined;
+  Cards: undefined;
   Transfers: undefined;
   NouveauVirement: { sourceAccountId?: string } | undefined;
   Devis: undefined;
@@ -41,7 +47,6 @@ export type RootStackParamList = {
   CommercialCycle: { quoteId: string };
   BonsCommande: undefined;
   BonCommandeDetail: { orderId: string };
-  Facturation: undefined;
   NouvelleFacture: { quoteId?: string } | undefined;
   FacturePreview: { invoiceId: string };
   Clients: undefined;
@@ -54,7 +59,6 @@ export type RootStackParamList = {
       }
     | undefined;
   Subscriptions: undefined;
-  Dashboard: undefined;
   /** Generic placeholder for "Plus tard" / phased screens (§8). */
   Stub: { titleKey: StubKey };
 };

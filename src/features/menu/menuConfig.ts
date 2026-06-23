@@ -1,6 +1,8 @@
 import {
+  ArrowLeftRight,
   Banknote,
   Boxes,
+  Building2,
   CreditCard,
   FileSignature,
   FileSpreadsheet,
@@ -12,22 +14,25 @@ import {
   Link2,
   type LucideIcon,
   Mail,
+  MapPin,
   Nfc,
   Receipt,
-  Repeat,
   ScrollText,
+  ShieldCheck,
   Star,
+  TrendingUp,
   Truck,
+  UserCog,
   Users,
   Wallet,
 } from "lucide-react-native";
 
-import type { RootStackParamList, StubKey } from "@navigation/types";
+import type { RootStackParamList, StubKey, TabParamList } from "@navigation/types";
 import type { TintName } from "@theme/theme";
 
-/** Where a menu row leads. */
+/** Where a menu row leads — a root-stack screen or one of the bottom tabs. */
 export type MenuTarget =
-  | { kind: "route"; name: keyof RootStackParamList }
+  | { kind: "route"; name: keyof RootStackParamList | keyof TabParamList }
   | { kind: "stub"; key: StubKey }
   | { kind: "external" };
 
@@ -61,6 +66,12 @@ export const menuGroups: MenuGroup[] = [
     tint: "blue",
     items: [
       { labelKey: "accounts", icon: Landmark, target: { kind: "route", name: "Accounts" } },
+      { labelKey: "cards", icon: CreditCard, target: { kind: "route", name: "Cards" } },
+      {
+        labelKey: "transactions",
+        icon: ArrowLeftRight,
+        target: { kind: "route", name: "Transactions" },
+      },
       { labelKey: "transfers", icon: Banknote, target: { kind: "route", name: "Transfers" } },
       { labelKey: "tapToPay", icon: Nfc, target: { kind: "stub", key: "tapToPay" }, soon: true },
       {
@@ -74,12 +85,6 @@ export const menuGroups: MenuGroup[] = [
         icon: Link2,
         target: { kind: "stub", key: "paymentLinks" },
         soon: true,
-      },
-      {
-        labelKey: "domiciliation",
-        icon: Repeat,
-        target: { kind: "stub", key: "domiciliation" },
-        p2: true,
       },
     ],
   },
@@ -104,6 +109,33 @@ export const menuGroups: MenuGroup[] = [
       },
       { labelKey: "subscriptions", icon: Wallet, target: { kind: "route", name: "Subscriptions" } },
       { labelKey: "supplierList", icon: Truck, target: { kind: "route", name: "Suppliers" } },
+    ],
+  },
+  {
+    titleKey: "menu.groupLegal",
+    tint: "navy",
+    items: [
+      {
+        labelKey: "domiciliation",
+        icon: Building2,
+        target: { kind: "stub", key: "domiciliation" },
+      },
+      {
+        labelKey: "capitalIncrease",
+        icon: TrendingUp,
+        target: { kind: "stub", key: "capitalIncrease" },
+      },
+      { labelKey: "changeManager", icon: UserCog, target: { kind: "stub", key: "changeManager" } },
+      {
+        labelKey: "changeHeadquarters",
+        icon: MapPin,
+        target: { kind: "stub", key: "changeHeadquarters" },
+      },
+      {
+        labelKey: "trademarkProtection",
+        icon: ShieldCheck,
+        target: { kind: "stub", key: "trademarkProtection" },
+      },
     ],
   },
   {

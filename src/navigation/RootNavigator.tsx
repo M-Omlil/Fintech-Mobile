@@ -4,14 +4,13 @@ import { ActivityIndicator, View } from "react-native";
 
 import { AccountsScreen } from "@features/accounts/AccountsScreen";
 import { RibScreen } from "@features/accounts/RibScreen";
+import { CardsScreen } from "@features/cards/CardsScreen";
 import { StubScreen } from "@features/common/StubScreen";
-import { DashboardScreen } from "@features/dashboard/DashboardScreen";
 import { ClassementScreen } from "@features/documents/ClassementScreen";
 import { DocumentsScreen } from "@features/documents/DocumentsScreen";
 import { ClientsScreen } from "@features/invoicing/clients/ClientsScreen";
 import { CommercialCycleScreen } from "@features/invoicing/cycle/CommercialCycleScreen";
 import { FacturePreviewScreen } from "@features/invoicing/invoices/FacturePreviewScreen";
-import { FacturesScreen } from "@features/invoicing/invoices/FacturesScreen";
 import { NouvelleFactureScreen } from "@features/invoicing/invoices/NouvelleFactureScreen";
 import { BonCommandeDetailScreen } from "@features/invoicing/orders/BonCommandeDetailScreen";
 import { BonsCommandeScreen } from "@features/invoicing/orders/BonsCommandeScreen";
@@ -22,6 +21,7 @@ import { SubscriptionsScreen } from "@features/invoicing/subscriptions/Subscript
 import { SupplierInvoicesScreen } from "@features/invoicing/suppliers/SupplierInvoicesScreen";
 import { SupplierPaymentScreen } from "@features/invoicing/suppliers/SupplierPaymentScreen";
 import { SuppliersScreen } from "@features/invoicing/suppliers/SuppliersScreen";
+import { TransactionsScreen } from "@features/transactions/TransactionsScreen";
 import { NouveauVirementScreen } from "@features/transfers/NouveauVirementScreen";
 import { TransfersScreen } from "@features/transfers/TransfersScreen";
 import { useSession } from "@services/auth/SessionProvider";
@@ -57,6 +57,8 @@ export function RootNavigator() {
       <Stack.Screen name="Tabs" component={BottomTabs} options={{ animation: "fade" }} />
       <Stack.Screen name="Accounts" component={AccountsScreen} />
       <Stack.Screen name="Rib" component={RibScreen} />
+      <Stack.Screen name="Cards" component={CardsScreen} />
+      <Stack.Screen name="Transactions" component={TransactionsScreen} />
       <Stack.Screen name="Documents" component={DocumentsScreen} />
       <Stack.Screen name="Classement" component={ClassementScreen} />
       <Stack.Screen name="Transfers" component={TransfersScreen} />
@@ -66,7 +68,6 @@ export function RootNavigator() {
       <Stack.Screen name="CommercialCycle" component={CommercialCycleScreen} />
       <Stack.Screen name="BonsCommande" component={BonsCommandeScreen} />
       <Stack.Screen name="BonCommandeDetail" component={BonCommandeDetailScreen} />
-      <Stack.Screen name="Facturation" component={FacturesScreen} />
       <Stack.Screen name="NouvelleFacture" component={NouvelleFactureScreen} />
       <Stack.Screen name="FacturePreview" component={FacturePreviewScreen} />
       <Stack.Screen name="Clients" component={ClientsScreen} />
@@ -75,7 +76,6 @@ export function RootNavigator() {
       <Stack.Screen name="SupplierInvoices" component={SupplierInvoicesScreen} />
       <Stack.Screen name="SupplierPayment" component={SupplierPaymentScreen} />
       <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
-      <Stack.Screen name="Dashboard" component={DashboardScreen} />
       <Stack.Screen name="Stub" component={StubScreen} />
     </Stack.Navigator>
   );

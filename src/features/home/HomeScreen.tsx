@@ -60,7 +60,7 @@ export function HomeScreen() {
           <QuickActions
             onTransfer={() => navigation.navigate("Transfers")}
             onAddDocument={() => navigation.navigate("Documents")}
-            onFactures={() => navigation.navigate("Facturation")}
+            onFactures={() => navigation.navigate("Tabs", { screen: "Facturation" })}
             onRib={() => navigation.navigate("Rib")}
           />
         </View>
@@ -73,7 +73,7 @@ export function HomeScreen() {
                 variant="text"
                 label={t("common.showAll")}
                 fullWidth={false}
-                onPress={() => navigation.navigate("Tabs", { screen: "Transactions" })}
+                onPress={() => navigation.navigate("Transactions")}
               />
             }
           />

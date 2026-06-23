@@ -88,7 +88,6 @@ export function FacturesScreen() {
     <Screen>
       <ScreenHeader
         title={t("invoicing.invoices.title")}
-        onBack={() => navigation.goBack()}
         rightActions={
           <IconButton
             icon={Plus}

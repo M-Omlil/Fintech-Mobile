@@ -1,5 +1,11 @@
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
-import { CreditCard, House, LayoutGrid, ReceiptText, type LucideIcon } from "lucide-react-native";
+import {
+  ChartColumnBig,
+  House,
+  LayoutGrid,
+  ReceiptText,
+  type LucideIcon,
+} from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
 import { Animated, Pressable, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -11,8 +17,8 @@ import type { TabParamList } from "./types";
 
 const TAB_ICONS: Record<keyof TabParamList, LucideIcon> = {
   Home: House,
-  Transactions: ReceiptText,
-  Cards: CreditCard,
+  Facturation: ReceiptText,
+  Dashboard: ChartColumnBig,
   Menu: LayoutGrid,
 };
 

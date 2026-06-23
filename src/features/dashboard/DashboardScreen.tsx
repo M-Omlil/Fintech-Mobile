@@ -1,25 +1,26 @@
 import { useNavigation } from "@react-navigation/native";
-import { Settings } from "lucide-react-native";
-import React, { useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { View } from "react-native";
-
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import {
-  AmountText,
-  Card,
-  IconButton,
-  Screen,
-  ScreenHeader,
-  SectionHeader,
-  Text,
-  useToast,
-} from "@components/index";
-import { useInvoices, useTotalAssets, useTransactions } from "@hooks/index";
+  ChartColumnBig,
+  ChartLine,
+  ChartPie,
+  ScanLine,
+  type LucideIcon,
+} from "lucide-react-native";
+import React, { useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
+import { Pressable, View } from "react-native";
+
+import { AmountText, Card, IconTile, Screen, ScreenHeader, Text } from "@components/index";
+import type { Invoice, Transaction } from "@domain/index";
+import { useAccounts, useInvoices, useTotalAssets, useTransactions } from "@hooks/index";
+import type { RootStackParamList } from "@navigation/types";
 import { makeStyles, useTheme } from "@theme/index";
 import type { ThemeColors } from "@theme/theme";
 
-import { BarChart, type BarDatum } from "./components/BarChart";
-import { Sparkline } from "./components/Sparkline";
+import { CustomChart, type ChartType } from "./components/CustomChart";
+
+type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const MONTHS_SHORT = [
   "janv.",
@@ -36,229 +37,389 @@ const MONTHS_SHORT = [
   "déc.",
 ] as const;
 
-function monthKey(d: Date): string {
-  return `${d.getFullYear()}-${d.getMonth()}`;
+type MetricKey = "ca" | "encaissements" | "depenses" | "tresorerie";
+type DurationKey = "7j" | "30j" | "6m" | "12m";
+
+const METRIC_COLOR: Record<MetricKey, keyof ThemeColors> = {
+  ca: "accent",
+  encaissements: "success",
+  depenses: "danger",
+  tresorerie: "primary",
+};
+
+/** Chart type cycles through these on each tap of the single toggle button. */
+const CHART_TYPES: ChartType[] = ["line", "bar", "pie"];
+const TYPE_ICON: Record<ChartType, LucideIcon> = {
+  line: ChartLine,
+  bar: ChartColumnBig,
+  pie: ChartPie,
+};
+
+const DURATIONS: { key: DurationKey; unit: "day" | "month"; count: number }[] = [
+  { key: "7j", unit: "day", count: 7 },
+  { key: "30j", unit: "day", count: 30 },
+  { key: "6m", unit: "month", count: 6 },
+  { key: "12m", unit: "month", count: 12 },
+];
+
+const vatOf = (inv: Invoice): number => inv.totalTTC - inv.totalHT;
+
+function startOfDay(d: Date): Date {
+  const c = new Date(d);
+  c.setHours(0, 0, 0, 0);
+  return c;
 }
 
-/** Tableau de bord — flows, monthly cash chart, and revenue by source (per reference). */
+/** Time buckets (day or month) ending today, oldest first. */
+function buildBuckets(now: Date, unit: "day" | "month", count: number) {
+  const buckets: { start: number; end: number; label: string }[] = [];
+  for (let i = count - 1; i >= 0; i -= 1) {
+    if (unit === "day") {
+      const s = startOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i));
+      const e = new Date(s);
+      e.setDate(e.getDate() + 1);
+      buckets.push({
+        start: s.getTime(),
+        end: e.getTime(),
+        label: `${s.getDate()}/${s.getMonth() + 1}`,
+      });
+    } else {
+      const s = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const e = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
+      buckets.push({
+        start: s.getTime(),
+        end: e.getTime(),
+        label: MONTHS_SHORT[s.getMonth()] ?? "",
+      });
+    }
+  }
+  return buckets;
+}
+
+/** Tableau de bord — 4 KPIs + one fully customisable chart (type/metric/duration) + OCR. */
 export function DashboardScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useStyles();
-  const navigation = useNavigation();
-  const toast = useToast();
+  const navigation = useNavigation<Nav>();
 
   const { data: transactions } = useTransactions();
   const { data: invoices } = useInvoices();
+  const { data: accounts } = useAccounts();
   const { data: totalAssets } = useTotalAssets();
 
-  const {
-    inflows,
-    outflows,
-    variation,
-    months,
-    sources,
-    inflowsSeries,
-    outflowsSeries,
-    variationSeries,
-    balanceSeries,
-  } = useMemo(() => {
+  const [chartType, setChartType] = useState<ChartType>("line");
+  const [metric, setMetric] = useState<MetricKey>("ca");
+  const [duration, setDuration] = useState<DurationKey>("30j");
+
+  const cycleChartType = () =>
+    setChartType(
+      (prev) => CHART_TYPES[(CHART_TYPES.indexOf(prev) + 1) % CHART_TYPES.length] ?? "line",
+    );
+
+  const kpis = useMemo(() => {
     const txns = transactions ?? [];
+    const invs = invoices ?? [];
     const now = new Date();
-    const thisKey = monthKey(now);
-    const inThisMonth = (iso: string) => monthKey(new Date(iso)) === thisKey;
+    const mainBalance = (accounts ?? []).find((a) => a.isMain)?.balance ?? 0;
 
-    const inAmt = txns
-      .filter((tx) => tx.type === "revenu" && inThisMonth(tx.date))
-      .reduce((s, tx) => s + tx.amount, 0);
-    const outAmt = txns
-      .filter((tx) => tx.type === "depense" && inThisMonth(tx.date))
-      .reduce((s, tx) => s + tx.amount, 0);
+    const thisMonth = (iso: string) => {
+      const d = new Date(iso);
+      return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+    };
+    const since30 = now.getTime() - 30 * 24 * 3600 * 1000;
+    const within30 = (iso: string) => new Date(iso).getTime() >= since30;
 
-    // Last 6 months series.
-    const series: BarDatum[] = [];
-    for (let i = 5; i >= 0; i -= 1) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = monthKey(d);
-      const monthTx = txns.filter((tx) => monthKey(new Date(tx.date)) === key);
-      series.push({
-        label: MONTHS_SHORT[d.getMonth()] ?? "",
-        inflows: monthTx.filter((tx) => tx.type === "revenu").reduce((s, tx) => s + tx.amount, 0),
-        outflows: monthTx.filter((tx) => tx.type === "depense").reduce((s, tx) => s + tx.amount, 0),
-      });
-    }
+    const net30 = txns
+      .filter((tx) => within30(tx.date))
+      .reduce((s, tx) => s + (tx.type === "revenu" ? tx.amount : -tx.amount), 0);
 
-    // Revenue by source (this month): credit transactions + paid invoices.
-    const grouped: Record<string, number> = {};
-    txns
-      .filter((tx) => tx.type === "revenu" && inThisMonth(tx.date))
-      .forEach((tx) => {
-        const key = tx.counterparty || tx.label;
-        grouped[key] = (grouped[key] ?? 0) + tx.amount;
-      });
-    (invoices ?? [])
-      .filter((inv) => inv.status === "payee" && inThisMonth(inv.issueDate))
-      .forEach((inv) => {
-        const key = inv.clientName ?? inv.number;
-        grouped[key] = (grouped[key] ?? 0) + inv.totalTTC;
-      });
-    const sourceList = Object.entries(grouped)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5)
-      .map(([label, amount]) => ({ label, amount }));
+    const caMonth = invs
+      .filter((inv) => inv.kind === "vente" && thisMonth(inv.issueDate))
+      .reduce((s, inv) => s + inv.totalTTC, 0);
 
-    // Per-metric 6-month trend series for the sparklines.
-    const inTrend = series.map((s) => s.inflows);
-    const outTrend = series.map((s) => s.outflows);
-    const varTrend = series.map((s) => s.inflows - s.outflows);
-    const total = totalAssets ?? 0;
-    const balTrend: number[] = new Array(series.length).fill(0);
-    let running = total;
-    for (let i = series.length - 1; i >= 0; i -= 1) {
-      balTrend[i] = running;
-      running -= varTrend[i] ?? 0;
-    }
+    const tvaCollected = invs
+      .filter((inv) => inv.kind === "vente" && thisMonth(inv.issueDate))
+      .reduce((s, inv) => s + vatOf(inv), 0);
+    const tvaDeductible = invs
+      .filter((inv) => inv.kind === "achat" && thisMonth(inv.issueDate))
+      .reduce((s, inv) => s + vatOf(inv), 0);
 
     return {
-      inflows: inAmt,
-      outflows: outAmt,
-      variation: inAmt - outAmt,
-      months: series,
-      sources: sourceList,
-      inflowsSeries: inTrend,
-      outflowsSeries: outTrend,
-      variationSeries: varTrend,
-      balanceSeries: balTrend,
+      soldeDispo: mainBalance,
+      treasury30: net30,
+      caMonth,
+      tvaDue: tvaCollected - tvaDeductible,
+      totalAssets: totalAssets ?? 0,
     };
-  }, [transactions, invoices, totalAssets]);
+  }, [transactions, invoices, accounts, totalAssets]);
 
-  const metric = (
+  const chartData = useMemo(() => {
+    const txns = transactions ?? [];
+    const invs = invoices ?? [];
+    const now = new Date();
+    const cfg = DURATIONS.find((d) => d.key === duration) ?? DURATIONS[1]!;
+
+    // Pie → distribution across the window; line/bar → time series.
+    if (chartType === "pie") {
+      const windowStart =
+        cfg.unit === "day"
+          ? now.getTime() - cfg.count * 24 * 3600 * 1000
+          : new Date(now.getFullYear(), now.getMonth() - cfg.count + 1, 1).getTime();
+      const inWindow = (iso: string) => new Date(iso).getTime() >= windowStart;
+      const group: Record<string, number> = {};
+      if (metric === "ca") {
+        invs
+          .filter((i) => i.kind === "vente" && inWindow(i.issueDate))
+          .forEach((i) => {
+            const k = i.clientName ?? i.number;
+            group[k] = (group[k] ?? 0) + i.totalTTC;
+          });
+      } else if (metric === "tresorerie") {
+        const entrees = txns
+          .filter((x) => x.type === "revenu" && inWindow(x.date))
+          .reduce((s, x) => s + x.amount, 0);
+        const sorties = txns
+          .filter((x) => x.type === "depense" && inWindow(x.date))
+          .reduce((s, x) => s + x.amount, 0);
+        group[t("dashboard.inflows")] = entrees;
+        group[t("dashboard.outflows")] = sorties;
+      } else {
+        const type: Transaction["type"] = metric === "encaissements" ? "revenu" : "depense";
+        txns
+          .filter((x) => x.type === type && inWindow(x.date))
+          .forEach((x) => {
+            const k = x.counterparty || x.label;
+            group[k] = (group[k] ?? 0) + x.amount;
+          });
+      }
+      return Object.entries(group)
+        .filter(([, v]) => v > 0)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 5)
+        .map(([label, value]) => ({ label, value }));
+    }
+
+    const buckets = buildBuckets(now, cfg.unit, cfg.count);
+    const sumIn = (start: number, end: number, pick: (x: Transaction) => number) =>
+      txns
+        .filter(
+          (x) => x.date && new Date(x.date).getTime() >= start && new Date(x.date).getTime() < end,
+        )
+        .reduce((s, x) => s + pick(x), 0);
+
+    if (metric === "ca") {
+      return buckets.map((b) => ({
+        label: b.label,
+        value: invs
+          .filter(
+            (i) =>
+              i.kind === "vente" &&
+              new Date(i.issueDate).getTime() >= b.start &&
+              new Date(i.issueDate).getTime() < b.end,
+          )
+          .reduce((s, i) => s + i.totalTTC, 0),
+      }));
+    }
+    if (metric === "encaissements") {
+      return buckets.map((b) => ({
+        label: b.label,
+        value: sumIn(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : 0)),
+      }));
+    }
+    if (metric === "depenses") {
+      return buckets.map((b) => ({
+        label: b.label,
+        value: sumIn(b.start, b.end, (x) => (x.type === "depense" ? x.amount : 0)),
+      }));
+    }
+    // tresorerie → cumulative net flow across the window.
+    let running = 0;
+    return buckets.map((b) => {
+      running += sumIn(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : -x.amount));
+      return { label: b.label, value: running };
+    });
+  }, [transactions, invoices, chartType, metric, duration, t]);
+
+  const tk = t as unknown as (key: string) => string;
+
+  const kpi = (
     label: string,
-    subtitle: string,
     value: number,
-    accent: keyof ThemeColors,
-    series: number[],
+    caption: string,
+    color: keyof ThemeColors,
     signed?: boolean,
   ) => (
-    <Card variant="surface" style={styles.metricCard}>
-      <View style={styles.metricLeft}>
-        <Text variant="titleMd" color="textPrimary">
-          {label}
-        </Text>
-        <Text variant="caption" color="textSecondary">
-          {subtitle}
-        </Text>
-      </View>
-      <Sparkline data={series} color={theme.colors[accent]} />
-      <AmountText value={value} signed={signed} variant="titleMd" />
+    <Card variant="surface" style={styles.kpiCard}>
+      <Text variant="caption" color="textSecondary" numberOfLines={1}>
+        {label}
+      </Text>
+      <AmountText value={value} signed={signed} variant="titleLg" color={color} />
+      <Text variant="caption" color="textSecondary" numberOfLines={1}>
+        {caption}
+      </Text>
     </Card>
   );
 
-  const monthlySub = `${t("dashboard.monthlyCumul")} · ${t("dashboard.allAccounts")}`;
+  const METRICS: MetricKey[] = ["ca", "encaissements", "depenses", "tresorerie"];
+  const TypeIcon = TYPE_ICON[chartType];
 
   return (
     <Screen>
-      <ScreenHeader
-        title={t("dashboard.title")}
-        onBack={() => navigation.goBack()}
-        rightActions={
-          <IconButton
-            icon={Settings}
-            variant="surface"
-            size={40}
-            label={t("common.settings")}
-            onPress={() => toast.show(t("common.settingsToast"), "info")}
-          />
-        }
-      />
+      <ScreenHeader title={t("dashboard.title")} />
 
-      <View style={styles.metrics}>
-        {metric(
-          t("dashboard.balance"),
-          `${t("dashboard.today")} · ${t("dashboard.allAccounts")}`,
-          totalAssets ?? 0,
-          "accent",
-          balanceSeries,
-        )}
-        {metric(t("dashboard.inflows"), monthlySub, inflows, "success", inflowsSeries)}
-        {metric(t("dashboard.outflows"), monthlySub, outflows, "danger", outflowsSeries)}
-        {metric(
-          t("dashboard.treasuryVariation"),
-          monthlySub,
-          variation,
-          "primary",
-          variationSeries,
-          true,
-        )}
+      <View style={styles.kpiGrid}>
+        <View style={styles.kpiRow}>
+          {kpi(
+            t("dashboard.kpi.solde"),
+            kpis.soldeDispo,
+            t("dashboard.kpi.soldeSub"),
+            "textPrimary",
+          )}
+          {kpi(
+            t("dashboard.kpi.treasury"),
+            kpis.treasury30,
+            t("dashboard.kpi.treasurySub"),
+            "primary",
+            true,
+          )}
+        </View>
+        <View style={styles.kpiRow}>
+          {kpi(t("dashboard.kpi.ca"), kpis.caMonth, t("dashboard.kpi.caSub"), "success")}
+          {kpi(t("dashboard.kpi.tva"), kpis.tvaDue, t("dashboard.kpi.tvaSub"), "danger")}
+        </View>
       </View>
 
       <Card variant="surface" style={styles.chartCard}>
         <View style={styles.chartHead}>
           <Text variant="titleMd" color="textPrimary">
-            {t("dashboard.fluxTitle")}
+            {tk(`dashboard.metric.${metric}`)}
           </Text>
-          <View style={styles.legend}>
-            <View style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: theme.colors.success }]} />
-              <Text variant="caption" color="textSecondary">
-                {t("dashboard.inflows")}
-              </Text>
-            </View>
-            <View style={styles.legendItem}>
-              <View style={[styles.dot, { backgroundColor: theme.colors.danger }]} />
-              <Text variant="caption" color="textSecondary">
-                {t("dashboard.outflows")}
-              </Text>
-            </View>
-          </View>
+          <Pressable
+            onPress={cycleChartType}
+            accessibilityRole="button"
+            accessibilityLabel={t("dashboard.chartTypeToggle")}
+            style={({ pressed }) => [styles.typeToggle, pressed && styles.pressed]}
+          >
+            <TypeIcon size={16} color={theme.colors.accent} strokeWidth={2} />
+            <Text variant="label" color="accent">
+              {tk(`dashboard.chartType.${chartType}`)}
+            </Text>
+          </Pressable>
         </View>
-        <BarChart data={months} />
+
+        <View style={styles.chips}>
+          {METRICS.map((m) => {
+            const active = metric === m;
+            return (
+              <Pressable
+                key={m}
+                onPress={() => setMetric(m)}
+                accessibilityRole="button"
+                accessibilityState={{ selected: active }}
+                style={({ pressed }) => [
+                  styles.chip,
+                  active && styles.chipActive,
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text variant="label" color={active ? "textOnPrimary" : "textSecondary"}>
+                  {tk(`dashboard.metric.${m}`)}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+
+        <CustomChart type={chartType} data={chartData} color={theme.colors[METRIC_COLOR[metric]]} />
+
+        {chartType !== "pie" ? (
+          <View style={styles.chips}>
+            {DURATIONS.map((d) => {
+              const active = duration === d.key;
+              return (
+                <Pressable
+                  key={d.key}
+                  onPress={() => setDuration(d.key)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  style={({ pressed }) => [
+                    styles.durChip,
+                    active && styles.chipActive,
+                    pressed && styles.pressed,
+                  ]}
+                >
+                  <Text variant="label" color={active ? "textOnPrimary" : "textSecondary"}>
+                    {tk(`dashboard.duration.${d.key}`)}
+                  </Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        ) : null}
       </Card>
 
-      <View style={styles.sources}>
-        <SectionHeader title={t("dashboard.bySource")} />
-        <Card variant="surface" style={styles.sourcesCard}>
-          {sources.length > 0 ? (
-            sources.map((source) => (
-              <View key={source.label} style={styles.sourceRow}>
-                <Text
-                  variant="bodyLg"
-                  color="textPrimary"
-                  numberOfLines={1}
-                  style={styles.sourceLabel}
-                >
-                  {source.label}
-                </Text>
-                <AmountText value={source.amount} signed variant="titleMd" color="success" />
-              </View>
-            ))
-          ) : (
-            <Text variant="bodyMd" color="textSecondary">
-              {t("dashboard.noData")}
+      <Pressable
+        accessibilityRole="button"
+        onPress={() => navigation.navigate("Documents")}
+        style={({ pressed }) => [pressed && styles.pressed]}
+      >
+        <Card variant="surface" style={styles.ocrCard}>
+          <IconTile icon={ScanLine} tint="violet" />
+          <View style={styles.ocrInfo}>
+            <Text variant="titleMd" color="textPrimary">
+              {t("dashboard.ocr.title")}
             </Text>
-          )}
+            <Text variant="caption" color="textSecondary">
+              {t("dashboard.ocr.subtitle")}
+            </Text>
+          </View>
         </Card>
-      </View>
+      </Pressable>
     </Screen>
   );
 }
 
 const useStyles = makeStyles((t) => ({
-  metrics: { gap: t.spacing.sm, marginTop: t.spacing.md },
-  metricCard: { flexDirection: "row", alignItems: "center", gap: t.spacing.md },
-  metricLeft: { flex: 1, gap: 2 },
-  chartCard: { gap: t.spacing.lg, marginTop: t.spacing.lg },
-  chartHead: { flexDirection: "row", alignItems: "center", justifyContent: "space-between" },
-  legend: { flexDirection: "row", gap: t.spacing.md },
-  legendItem: { flexDirection: "row", alignItems: "center", gap: t.spacing.xs },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  sources: { gap: t.spacing.xs, marginTop: t.spacing.lg },
-  sourcesCard: { gap: t.spacing.md },
-  sourceRow: {
+  kpiGrid: { gap: t.spacing.sm, marginTop: t.spacing.md },
+  kpiRow: { flexDirection: "row", gap: t.spacing.sm },
+  kpiCard: { flex: 1, gap: t.spacing.xs },
+  chartCard: { gap: t.spacing.md, marginTop: t.spacing.lg },
+  chartHead: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: t.spacing.sm,
   },
-  sourceLabel: { flex: 1 },
+  typeToggle: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: t.spacing.xs,
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.radii.pill,
+    backgroundColor: t.colors.surfaceAccent,
+  },
+  chips: { flexDirection: "row", flexWrap: "wrap", gap: t.spacing.sm },
+  chip: {
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.radii.pill,
+    backgroundColor: t.colors.surfaceMuted,
+  },
+  durChip: {
+    paddingHorizontal: t.spacing.md,
+    paddingVertical: t.spacing.xs,
+    borderRadius: t.radii.pill,
+    backgroundColor: t.colors.surfaceMuted,
+  },
+  chipActive: { backgroundColor: t.colors.primary },
+  pressed: { opacity: 0.6 },
+  ocrCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: t.spacing.md,
+    marginTop: t.spacing.lg,
+  },
+  ocrInfo: { flex: 1, gap: 2 },
 }));

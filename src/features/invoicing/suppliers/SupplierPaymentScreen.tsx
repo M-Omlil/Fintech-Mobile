@@ -175,7 +175,9 @@ export function SupplierPaymentScreen() {
       ? t("supplierPayment.sourceText")
       : source === "vision"
         ? t("supplierPayment.sourceVision")
-        : t("supplierPayment.sourceNone");
+        : source === "simulated"
+          ? t("supplierPayment.sourceSimulated")
+          : t("supplierPayment.sourceNone");
 
   return (
     <Screen>

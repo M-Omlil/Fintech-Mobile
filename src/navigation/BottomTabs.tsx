@@ -2,10 +2,10 @@ import { createBottomTabNavigator, type BottomTabBarProps } from "@react-navigat
 import React from "react";
 import { useTranslation } from "react-i18next";
 
-import { CardsScreen } from "@features/cards/CardsScreen";
+import { DashboardScreen } from "@features/dashboard/DashboardScreen";
 import { HomeScreen } from "@features/home/HomeScreen";
+import { FacturesScreen } from "@features/invoicing/invoices/FacturesScreen";
 import { MenuScreen } from "@features/menu/MenuScreen";
-import { TransactionsScreen } from "@features/transactions/TransactionsScreen";
 
 import { FloatingTabBar } from "./FloatingTabBar";
 import type { TabParamList } from "./types";
@@ -24,11 +24,15 @@ export function BottomTabs() {
     <Tab.Navigator tabBar={renderTabBar} screenOptions={{ headerShown: false }}>
       <Tab.Screen name="Home" component={HomeScreen} options={{ tabBarLabel: t("tabs.home") }} />
       <Tab.Screen
-        name="Transactions"
-        component={TransactionsScreen}
-        options={{ tabBarLabel: t("tabs.transactions") }}
+        name="Facturation"
+        component={FacturesScreen}
+        options={{ tabBarLabel: t("tabs.facturation") }}
       />
-      <Tab.Screen name="Cards" component={CardsScreen} options={{ tabBarLabel: t("tabs.cards") }} />
+      <Tab.Screen
+        name="Dashboard"
+        component={DashboardScreen}
+        options={{ tabBarLabel: t("tabs.dashboard") }}
+      />
       <Tab.Screen name="Menu" component={MenuScreen} options={{ tabBarLabel: t("tabs.menu") }} />
     </Tab.Navigator>
   );

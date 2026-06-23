@@ -1,7 +1,9 @@
+import { useNavigation } from "@react-navigation/native";
 import {
   ChevronRight,
   Eye,
   KeyRound,
+  Link2,
   Lock,
   LockOpen,
   ShieldCheck,
@@ -11,7 +13,7 @@ import {
 } from "lucide-react-native";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { View } from "react-native";
+import { Share, View } from "react-native";
 
 import {
   Button,
@@ -22,6 +24,7 @@ import {
   ListItem,
   Screen,
   ScreenHeader,
+  SectionHeader,
   TabPill,
   Text,
   useToast,
@@ -37,11 +40,12 @@ import { PaymentLimits } from "./components/PaymentLimits";
 
 type CardsTab = "yours" | "fleet";
 
-/** Cartes tab (Section 6.4). */
+/** Cartes screen (Section 6.4). */
 export function CardsScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useStyles();
+  const navigation = useNavigation();
 
   const [tab, setTab] = useState<CardsTab>("yours");
   const [cashbackVisible, setCashbackVisible] = useState(true);
@@ -52,11 +56,17 @@ export function CardsScreen() {
   const card = cards?.[0];
   const soon = () => toast.show(t("common.comingSoonToast"), "info");
 
+  const sharePaymentLink = () => {
+    const url = "https://pay.amano.ma/r/AMANO-7F3K2";
+    Share.share({ message: t("cards.paymentLink.shareMessage", { url }) }).catch(() => undefined);
+    toast.show(t("cards.paymentLink.toast"), "success");
+  };
+
   const chevron = <ChevronRight size={20} color={theme.colors.textSecondary} strokeWidth={1.75} />;
 
   return (
     <Screen>
-      <ScreenHeader title={t("cards.title")} />
+      <ScreenHeader title={t("cards.title")} onBack={() => navigation.goBack()} />
 
       <TabPill
         style={styles.tabs}
@@ -155,6 +165,19 @@ export function CardsScreen() {
 
           <Button variant="text" label={t("cards.rows.premium")} onPress={soon} />
 
+          <View style={styles.paymentMethods}>
+            <SectionHeader title={t("cards.paymentLink.sectionTitle")} />
+            <Card variant="surface">
+              <ListItem
+                leading={<IconTile icon={Link2} tint="violet" />}
+                title={t("cards.paymentLink.title")}
+                subtitle={t("cards.paymentLink.subtitle")}
+                trailing={chevron}
+                onPress={sharePaymentLink}
+              />
+            </Card>
+          </View>
+
           <Card variant="surface">
             <ListItem
               danger
@@ -175,5 +198,6 @@ const useStyles = makeStyles((t) => ({
   tabs: { marginVertical: t.spacing.md },
   body: { gap: t.spacing.lg },
   actions: { flexDirection: "row", justifyContent: "space-around" },
+  paymentMethods: { gap: t.spacing.xs },
   fleet: { flex: 1, paddingTop: t.spacing.xxl },
 }));
