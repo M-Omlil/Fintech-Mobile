@@ -1,5 +1,22 @@
 # Amano — Prototype screen recordings
 
+## Demo-day script takes (one use case per video)
+
+Recorded on the standalone release APK (1080×2400), mapping the `Script vidéo · 60s — mylegal.ma`
+scenes onto the app's real flows and data (Amano / MyLegal, MAD). One file per use case:
+
+| File | Scene | What it shows |
+|------|-------|---------------|
+| `mylegal-1-compte-pro.mp4` | **LE COMPTE PRO** | Accueil (solde + virement entrant +100 000) → **RIB marocain** (RIB/IBAN + QR) → **Carte** ONE |
+| `mylegal-2-facture-fournisseur.mp4` | **FACTURATION · Cas 1 — facture fournisseur** | Facturation → **scan** d'une facture → extraction auto (MyLegal · 4 680 DH · RIB Attijariwafa, bénéficiaire créé) → **Préparation du virement** → valider (OTP) → **Virement émis ✓** |
+| `mylegal-3-facture-client.mp4` | **FACTURATION · Cas 2 — facture client** | Facturation → **envoi** d'une facture client (Clinique Al Madina · 19 800 DH) → **Marquer payée** (animation) → **Payée ✓**, total Réglées mis à jour |
+| `mylegal-4-dashboard.mp4` | **LE DASHBOARD** | 4 widgets (Solde dispo · Trésorerie 30 j · C.A ce mois · TVA due ce trimestre) + graphique **personnalisable** (Courbe → Barres → Secteurs) |
+
+Recorded via `adb screenrecord` with paced fixed-coordinate taps; the transaction popup
+(OTP → checkmark animation → reçu) is the centrepiece of Cas 1.
+
+
+
 Captured on the `amano_pixel` emulator (Expo Go), demo persona **ByteStore — Informatique & Réseaux**
 (sole-proprietor IT-hardware retailer, Casablanca, MAD).
 
