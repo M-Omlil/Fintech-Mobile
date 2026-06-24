@@ -10,7 +10,7 @@ import React, {
   useState,
 } from "react";
 import { useTranslation } from "react-i18next";
-import { Animated, Modal, Pressable, TextInput, View } from "react-native";
+import { Animated, KeyboardAvoidingView, Platform, Pressable, TextInput, View } from "react-native";
 
 import { AmountText } from "@components/AmountText";
 import { Button } from "@components/Button";
@@ -64,34 +64,38 @@ export function TransactionFeedbackProvider({ children }: { children: React.Reac
 
   return (
     <TransactionFeedbackContext.Provider value={value}>
-      {children}
-      <Modal
-        visible={!!state}
-        transparent
-        animationType="fade"
-        onRequestClose={() => finish(false)}
-      >
-        <View style={styles.scrim}>
-          {state?.step === "otp" ? (
-            <OtpCard
-              onCancel={() => finish(false)}
-              onValid={() => setState((s) => (s ? { ...s, step: "success" } : s))}
-            />
-          ) : state?.step === "success" ? (
-            <SuccessCard
-              receipt={state.input.receipt}
-              onDetails={() => finish(true)}
-              onClose={() => finish(false)}
-              onShareReceipt={
-                business
-                  ? () =>
-                      shareTransactionReceipt(business, state.input.receipt).catch(() => undefined)
-                  : undefined
-              }
-            />
-          ) : null}
-        </View>
-      </Modal>
+      <View style={styles.flex}>
+        {children}
+        {/* In-tree overlay (not a Modal): RN's Modal suppresses the soft keyboard on the
+            new architecture, which broke OTP entry. An absolute View keeps the keyboard. */}
+        {state ? (
+          <KeyboardAvoidingView
+            style={styles.scrim}
+            behavior={Platform.OS === "ios" ? "padding" : undefined}
+          >
+            {state.step === "otp" ? (
+              <OtpCard
+                onCancel={() => finish(false)}
+                onValid={() => setState((s) => (s ? { ...s, step: "success" } : s))}
+              />
+            ) : (
+              <SuccessCard
+                receipt={state.input.receipt}
+                onDetails={() => finish(true)}
+                onClose={() => finish(false)}
+                onShareReceipt={
+                  business
+                    ? () =>
+                        shareTransactionReceipt(business, state.input.receipt).catch(
+                          () => undefined,
+                        )
+                    : undefined
+                }
+              />
+            )}
+          </KeyboardAvoidingView>
+        ) : null}
+      </View>
     </TransactionFeedbackContext.Provider>
   );
 }
@@ -131,24 +135,29 @@ function OtpCard({ onValid, onCancel }: { onValid: () => void; onCancel: () => v
         {t("txFeedback.otpSubtitle")}
       </Text>
 
-      <Pressable style={styles.otpRow} onPress={() => inputRef.current?.focus()}>
-        {[0, 1, 2, 3].map((i) => (
-          <View key={i} style={[styles.otpBox, code.length === i && styles.otpBoxActive]}>
-            <Text variant="titleXl" color="textPrimary">
-              {code[i] ?? ""}
-            </Text>
-          </View>
-        ))}
-      </Pressable>
-      <TextInput
-        ref={inputRef}
-        value={code}
-        onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 4))}
-        keyboardType="number-pad"
-        maxLength={4}
-        style={styles.hiddenInput}
-        autoFocus
-      />
+      <View style={styles.otpWrap}>
+        <View style={styles.otpRow}>
+          {[0, 1, 2, 3].map((i) => (
+            <View key={i} style={[styles.otpBox, code.length === i && styles.otpBoxActive]}>
+              <Text variant="titleXl" color="textPrimary">
+                {code[i] ?? ""}
+              </Text>
+            </View>
+          ))}
+        </View>
+        {/* Transparent input covering the boxes — reliably catches the hardware/software
+            keyboard (a tiny hidden input drops physical-keyboard focus on the emulator). */}
+        <TextInput
+          ref={inputRef}
+          value={code}
+          onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 4))}
+          keyboardType="number-pad"
+          maxLength={4}
+          autoFocus
+          caretHidden
+          style={styles.otpInput}
+        />
+      </View>
 
       <Button
         label={t("txFeedback.otpValidate")}
@@ -238,8 +247,13 @@ function SuccessCard({
 }
 
 const useStyles = makeStyles((t) => ({
+  flex: { flex: 1 },
   scrim: {
-    flex: 1,
+    position: "absolute",
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     backgroundColor: t.colors.overlay,
     alignItems: "center",
     justifyContent: "center",
@@ -272,7 +286,8 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center",
     marginBottom: t.spacing.sm,
   },
-  otpRow: { flexDirection: "row", gap: t.spacing.sm, marginTop: t.spacing.md },
+  otpWrap: { marginTop: t.spacing.md, position: "relative" },
+  otpRow: { flexDirection: "row", gap: t.spacing.sm },
   otpBox: {
     width: 58,
     height: 66,
@@ -284,7 +299,7 @@ const useStyles = makeStyles((t) => ({
     justifyContent: "center",
   },
   otpBoxActive: { borderColor: t.colors.accent, backgroundColor: t.colors.surfaceAccent },
-  hiddenInput: { position: "absolute", width: 1, height: 1, opacity: 0 },
+  otpInput: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0, opacity: 0 },
   cta: { alignSelf: "stretch", marginTop: t.spacing.lg },
   actions: { alignSelf: "stretch", gap: t.spacing.sm, marginTop: t.spacing.lg },
 }));
