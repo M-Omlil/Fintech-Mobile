@@ -3,6 +3,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import { base64ToBytes } from "./base64";
 import { isVisionEnabled } from "./config";
 import { parseInvoiceFields, type InvoiceFields } from "./fields";
+import { detectKnownIssuer } from "./issuers";
 import { extractPdfText } from "./pdfText";
 import { simulateInvoiceFields } from "./simulate";
 import { visionExtract } from "./vision";
@@ -76,6 +77,18 @@ export async function extractInvoiceData(file: UploadFile): Promise<ExtractedInv
     }
     if (text) {
       const fields = parseInvoiceFields(text);
+      // A recognised issuer (supplier in the footer) is authoritative for who we pay; the
+      // amount is still read live from the document.
+      const issuer = detectKnownIssuer(text);
+      if (issuer) {
+        return {
+          supplierName: issuer.supplierName,
+          amount: fields.amount ?? issuer.amount,
+          rib: issuer.rib,
+          ice: issuer.ice ?? fields.ice,
+          source: "text",
+        };
+      }
       if (hasFields(fields)) return complete(fields, file, "text");
     }
   } catch {
