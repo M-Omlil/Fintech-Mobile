@@ -109,7 +109,7 @@ export function SupplierPaymentScreen() {
   const onImport = async () => {
     try {
       const res = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf", "image/*"],
+        type: ["application/pdf"],
         copyToCacheDirectory: true,
       });
       const asset = res.canceled ? undefined : res.assets[0];

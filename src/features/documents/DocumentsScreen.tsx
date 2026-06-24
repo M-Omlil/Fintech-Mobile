@@ -113,8 +113,9 @@ export function DocumentsScreen() {
 
   const pickFromFiles = async () => {
     try {
+      // Files = invoices (PDF). Photos/scans go through the camera & gallery options.
       const res = await DocumentPicker.getDocumentAsync({
-        type: ["application/pdf", "image/*"],
+        type: ["application/pdf"],
         copyToCacheDirectory: true,
       });
       const asset = res.canceled ? undefined : res.assets[0];
