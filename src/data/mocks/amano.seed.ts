@@ -355,8 +355,9 @@ export function buildAmanoSeed(now: Date = new Date()) {
       beneficiary: "Disway SA",
       amount: 8500,
       currency: "MAD",
+      // Issued a few hours ago → still "en cours"; it auto-settles to "exécuté" after 24h.
       status: "ongoing",
-      date: daysBack(now, 4),
+      date: new Date(now.getTime() - 3 * 60 * 60 * 1000).toISOString(),
       reference: "Règlement FA-2026/004",
     },
   ];

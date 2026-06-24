@@ -47,6 +47,15 @@ import type {
   Transfer,
 } from "@domain/index";
 
+/** A virement settles automatically 24h after it is issued: "en cours" → "exécuté". */
+const TRANSFER_SETTLE_MS = 24 * 60 * 60 * 1000;
+function settleTransfer(t: Transfer): Transfer {
+  if (t.status === "ongoing" && Date.now() - new Date(t.date).getTime() >= TRANSFER_SETTLE_MS) {
+    return { ...t, status: "past" };
+  }
+  return t;
+}
+
 function matchesFilter(tx: Transaction, filter?: TransactionFilter): boolean {
   if (!filter) return true;
   if (filter.accountId && tx.accountId !== filter.accountId) return false;
@@ -180,7 +189,7 @@ export function createPersistentRepositories(businessId: string): Repositories {
   const transfers: TransfersRepository = {
     async getTransfers(tab: TransferTab) {
       const all = read()
-        .transfers.slice()
+        .transfers.map(settleTransfer)
         .sort((a, b) => b.date.localeCompare(a.date));
       return tab === "ongoing"
         ? all.filter((t) => t.status === "ongoing")
