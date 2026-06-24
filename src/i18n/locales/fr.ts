@@ -412,6 +412,7 @@ export const fr = {
     invoices: {
       title: "Facturation",
       create: "Nouvelle facture",
+      scan: "Scanner une facture",
       kindVente: "Facture de vente",
       kindAchat: "Facture d'achat",
       detailTitle: "Facture {{number}}",
@@ -693,10 +694,6 @@ export const fr = {
       "30j": "30 j",
       "6m": "6 mois",
       "12m": "12 mois",
-    },
-    ocr: {
-      title: "Scanner une facture",
-      subtitle: "OCR — extraction et remplissage automatiques",
     },
   },
 

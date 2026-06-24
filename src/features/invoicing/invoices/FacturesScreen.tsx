@@ -1,6 +1,6 @@
 import { useNavigation } from "@react-navigation/native";
 import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import { Check, Download, Plus, Receipt, Send } from "lucide-react-native";
+import { Check, Download, Plus, Receipt, ScanLine, Send } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
@@ -89,13 +89,22 @@ export function FacturesScreen() {
       <ScreenHeader
         title={t("invoicing.invoices.title")}
         rightActions={
-          <IconButton
-            icon={Plus}
-            variant="surface"
-            size={40}
-            label={t("invoicing.invoices.create")}
-            onPress={() => navigation.navigate("NouvelleFacture")}
-          />
+          <>
+            <IconButton
+              icon={ScanLine}
+              variant="surface"
+              size={40}
+              label={t("invoicing.invoices.scan")}
+              onPress={() => navigation.navigate("Documents")}
+            />
+            <IconButton
+              icon={Plus}
+              variant="surface"
+              size={40}
+              label={t("invoicing.invoices.create")}
+              onPress={() => navigation.navigate("NouvelleFacture")}
+            />
+          </>
         }
       />
 

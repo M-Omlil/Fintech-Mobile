@@ -1,26 +1,15 @@
-import { useNavigation } from "@react-navigation/native";
-import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
-import {
-  ChartColumnBig,
-  ChartLine,
-  ChartPie,
-  ScanLine,
-  type LucideIcon,
-} from "lucide-react-native";
+import { ChartColumnBig, ChartLine, ChartPie, type LucideIcon } from "lucide-react-native";
 import React, { useMemo, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
-import { AmountText, Card, IconTile, Screen, ScreenHeader, Text } from "@components/index";
+import { AmountText, Card, Screen, ScreenHeader, Text } from "@components/index";
 import type { Invoice, Transaction } from "@domain/index";
 import { useAccounts, useInvoices, useTotalAssets, useTransactions } from "@hooks/index";
-import type { RootStackParamList } from "@navigation/types";
 import { makeStyles, useTheme } from "@theme/index";
 import type { ThemeColors } from "@theme/theme";
 
 import { CustomChart, type ChartType } from "./components/CustomChart";
-
-type Nav = NativeStackNavigationProp<RootStackParamList>;
 
 const MONTHS_SHORT = [
   "janv.",
@@ -96,12 +85,11 @@ function buildBuckets(now: Date, unit: "day" | "month", count: number) {
   return buckets;
 }
 
-/** Tableau de bord — 4 KPIs + one fully customisable chart (type/metric/duration) + OCR. */
+/** Tableau de bord — 4 KPIs + one fully customisable chart (type/metric/duration). */
 export function DashboardScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useStyles();
-  const navigation = useNavigation<Nav>();
 
   const { data: transactions } = useTransactions();
   const { data: invoices } = useInvoices();
@@ -358,24 +346,6 @@ export function DashboardScreen() {
           </View>
         ) : null}
       </Card>
-
-      <Pressable
-        accessibilityRole="button"
-        onPress={() => navigation.navigate("Documents")}
-        style={({ pressed }) => [pressed && styles.pressed]}
-      >
-        <Card variant="surface" style={styles.ocrCard}>
-          <IconTile icon={ScanLine} tint="violet" />
-          <View style={styles.ocrInfo}>
-            <Text variant="titleMd" color="textPrimary">
-              {t("dashboard.ocr.title")}
-            </Text>
-            <Text variant="caption" color="textSecondary">
-              {t("dashboard.ocr.subtitle")}
-            </Text>
-          </View>
-        </Card>
-      </Pressable>
     </Screen>
   );
 }
@@ -415,11 +385,4 @@ const useStyles = makeStyles((t) => ({
   },
   chipActive: { backgroundColor: t.colors.primary },
   pressed: { opacity: 0.6 },
-  ocrCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: t.spacing.md,
-    marginTop: t.spacing.lg,
-  },
-  ocrInfo: { flex: 1, gap: 2 },
 }));
