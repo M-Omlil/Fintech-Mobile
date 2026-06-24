@@ -17,6 +17,7 @@ import {
   TabPill,
   Text,
   useToast,
+  useTransactionFeedback,
 } from "@components/index";
 import type { Beneficiary } from "@domain/index";
 import { useAccounts, useBeneficiaries, useTransfers } from "@hooks/index";
@@ -60,6 +61,7 @@ export function NouveauVirementScreen() {
   const { create, data: recent } = useTransfers("history");
   const { data: beneficiaries, addBeneficiary } = useBeneficiaries();
   const { data: accounts } = useAccounts();
+  const { confirm } = useTransactionFeedback();
 
   const [name, setName] = useState("");
   const [account, setAccount] = useState("");
@@ -97,6 +99,7 @@ export function NouveauVirementScreen() {
       return;
     }
     setSaving(true);
+    let ok = false;
     try {
       await create({
         beneficiary: name.trim(),
@@ -106,14 +109,35 @@ export function NouveauVirementScreen() {
         account: account.trim(),
         scheduledDate: timing === "scheduled" ? scheduledDate.toISOString() : undefined,
       });
-      toast.show(
-        timing === "scheduled" ? t("transfers.form.toastScheduled") : t("transfers.form.toastSent"),
-        "success",
-      );
-      navigation.goBack();
+      ok = true;
     } finally {
       setSaving(false);
     }
+    if (!ok) return;
+
+    // Scheduled transfers aren't executed now → just confirm via toast.
+    if (timing === "scheduled") {
+      toast.show(t("transfers.form.toastScheduled"), "success");
+      navigation.goBack();
+      return;
+    }
+
+    // Immediate transfer → OTP + animated success + receipt.
+    await confirm({
+      receipt: {
+        direction: "out",
+        title: t("transfers.form.receiptTitle"),
+        party: name.trim(),
+        amount: value,
+        currency: "MAD",
+        date: new Date().toISOString(),
+        reference: `VIR${String(Date.now()).slice(-9)}`,
+        method: t("invoicing.invoices.payment.rib"),
+        account: account.trim() || undefined,
+        bank: detectedBank,
+      },
+    });
+    navigation.goBack();
   };
 
   const favourites = beneficiaries ?? [];

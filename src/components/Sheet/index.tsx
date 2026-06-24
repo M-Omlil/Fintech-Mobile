@@ -1,6 +1,6 @@
 import { X } from "lucide-react-native";
 import React from "react";
-import { Modal, Pressable, View, type ViewStyle } from "react-native";
+import { Modal, Pressable, ScrollView, View, type ViewStyle } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@components/Text";
@@ -48,7 +48,14 @@ export function Sheet({ visible, onClose, title, children, footer, style }: Shee
               </Text>
             ) : null}
           </View>
-          <View style={styles.content}>{children}</View>
+          <ScrollView
+            style={styles.content}
+            contentContainerStyle={styles.contentInner}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
+            {children}
+          </ScrollView>
           {footer ? <View style={styles.footer}>{footer}</View> : null}
         </View>
       </View>
@@ -75,5 +82,6 @@ const useStyles = makeStyles((t) => ({
   },
   close: { marginLeft: -t.spacing.xs },
   content: { flexShrink: 1 },
+  contentInner: { paddingBottom: t.spacing.sm },
   footer: { paddingTop: t.spacing.md },
 }));

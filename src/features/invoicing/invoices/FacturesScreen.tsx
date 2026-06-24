@@ -10,6 +10,7 @@ import {
   Badge,
   Card,
   EmptyState,
+  FadeSlideIn,
   IconButton,
   IconTile,
   Screen,
@@ -142,64 +143,69 @@ export function FacturesScreen() {
 
       {visible.length > 0 ? (
         <View style={styles.list}>
-          {visible.map((invoice) => {
+          {visible.map((invoice, i) => {
             const eff = effectiveStatus(invoice);
             return (
-              <Card key={invoice.id} variant="surface" style={styles.invoiceCard}>
-                <View style={styles.invoiceTop}>
-                  <IconTile icon={Receipt} tint={STATUS_TINT[eff]} />
-                  <View style={styles.invoiceInfo}>
-                    <Text variant="titleMd" color="textPrimary">
-                      {invoice.clientName ?? invoice.number}
-                    </Text>
-                    <Text variant="caption" color="textSecondary">
-                      {invoice.number} · {formatLongDate(invoice.dueDate)}
-                    </Text>
+              <FadeSlideIn key={invoice.id} index={i}>
+                <Card variant="surface" style={styles.invoiceCard}>
+                  <View style={styles.invoiceTop}>
+                    <IconTile icon={Receipt} tint={STATUS_TINT[eff]} />
+                    <View style={styles.invoiceInfo}>
+                      <Text variant="titleMd" color="textPrimary">
+                        {invoice.clientName ?? invoice.number}
+                      </Text>
+                      <Text variant="caption" color="textSecondary">
+                        {invoice.number} · {formatLongDate(invoice.dueDate)}
+                      </Text>
+                    </View>
+                    <View style={styles.invoiceRight}>
+                      <AmountText value={invoice.totalTTC} variant="titleMd" />
+                      <Badge
+                        label={tk(`invoicing.invoices.status.${eff}`)}
+                        tone={STATUS_TONE[eff]}
+                      />
+                    </View>
                   </View>
-                  <View style={styles.invoiceRight}>
-                    <AmountText value={invoice.totalTTC} variant="titleMd" />
-                    <Badge label={tk(`invoicing.invoices.status.${eff}`)} tone={STATUS_TONE[eff]} />
-                  </View>
-                </View>
-                <View style={styles.actions}>
-                  {invoice.status === "brouillon" ? (
+                  <View style={styles.actions}>
+                    {invoice.status === "brouillon" ? (
+                      <IconButton
+                        icon={Send}
+                        variant="surface"
+                        size={48}
+                        label={t("invoicing.invoices.markSent")}
+                        onPress={() => {
+                          setInvoiceStatus(invoice.id, "envoyee");
+                          toast.show(t("invoicing.invoices.toastSent"));
+                        }}
+                      />
+                    ) : invoice.status !== "payee" && invoice.status !== "annulee" ? (
+                      <IconButton
+                        icon={Check}
+                        variant="dark"
+                        size={48}
+                        animateOnPress
+                        label={t("invoicing.invoices.markPaid")}
+                        onPress={() => {
+                          setInvoiceStatus(invoice.id, "payee");
+                          toast.show(t("invoicing.invoices.toastPaid"));
+                        }}
+                      />
+                    ) : null}
                     <IconButton
-                      icon={Send}
+                      icon={Download}
                       variant="surface"
                       size={48}
-                      label={t("invoicing.invoices.markSent")}
+                      label={t("invoicing.invoices.export")}
                       onPress={() => {
-                        setInvoiceStatus(invoice.id, "envoyee");
-                        toast.show(t("invoicing.invoices.toastSent"));
+                        if (business) {
+                          exportInvoiceDocument(business, invoice).catch(() => undefined);
+                          toast.show(t("invoicing.invoices.toastExport"));
+                        }
                       }}
                     />
-                  ) : invoice.status !== "payee" && invoice.status !== "annulee" ? (
-                    <IconButton
-                      icon={Check}
-                      variant="dark"
-                      size={48}
-                      animateOnPress
-                      label={t("invoicing.invoices.markPaid")}
-                      onPress={() => {
-                        setInvoiceStatus(invoice.id, "payee");
-                        toast.show(t("invoicing.invoices.toastPaid"));
-                      }}
-                    />
-                  ) : null}
-                  <IconButton
-                    icon={Download}
-                    variant="surface"
-                    size={48}
-                    label={t("invoicing.invoices.export")}
-                    onPress={() => {
-                      if (business) {
-                        exportInvoiceDocument(business, invoice).catch(() => undefined);
-                        toast.show(t("invoicing.invoices.toastExport"));
-                      }
-                    }}
-                  />
-                </View>
-              </Card>
+                  </View>
+                </Card>
+              </FadeSlideIn>
             );
           })}
         </View>

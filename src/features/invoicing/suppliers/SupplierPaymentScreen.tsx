@@ -1,10 +1,11 @@
 import { useNavigation, useRoute, type RouteProp } from "@react-navigation/native";
+import type { NativeStackNavigationProp } from "@react-navigation/native-stack";
 import * as DocumentPicker from "expo-document-picker";
 import * as ImagePicker from "expo-image-picker";
 import { Building2, Camera, CheckCircle2, FileText, FolderOpen, Send } from "lucide-react-native";
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, Animated, View } from "react-native";
 
 import {
   AmountText,
@@ -18,6 +19,7 @@ import {
   Text,
   ToggleRow,
   useToast,
+  useTransactionFeedback,
 } from "@components/index";
 import { useBeneficiaries, useTransfers } from "@hooks/index";
 import type { RootStackParamList } from "@navigation/types";
@@ -44,15 +46,16 @@ export function SupplierPaymentScreen() {
   const { t } = useTranslation();
   const theme = useTheme();
   const styles = useStyles();
-  const navigation = useNavigation();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const toast = useToast();
+  const { confirm } = useTransactionFeedback();
 
   const prefill = useRoute<RouteProp<RootStackParamList, "SupplierPayment">>().params?.prefill;
 
   const { data: beneficiaries, addBeneficiary } = useBeneficiaries();
   const { create } = useTransfers("ongoing");
 
-  const [phase, setPhase] = useState<"intake" | "review">("intake");
+  const [phase, setPhase] = useState<"intake" | "preparing" | "review">("intake");
   const [docName, setDocName] = useState("");
   const [source, setSource] = useState<ExtractionSource>("none");
   const [extracting, setExtracting] = useState(false);
@@ -62,14 +65,18 @@ export function SupplierPaymentScreen() {
   const [saveBeneficiary, setSaveBeneficiary] = useState(true);
   const [paying, setPaying] = useState(false);
 
-  // Hand-off from the documents flow with already-extracted fields.
+  // Hand-off from the documents flow with already-extracted fields → a short
+  // "document importé → préparation du virement" animation before the review.
   useEffect(() => {
     if (!prefill) return;
-    setPhase("review");
     setAmount(prefill.amount != null ? String(prefill.amount) : "");
     setRib(prefill.rib ? formatAccountInput(prefill.rib) : "");
     setName(prefill.supplierName ?? "");
     setSource((prefill.source as ExtractionSource) ?? "none");
+    setDocName(t("supplierPayment.defaultDoc"));
+    setPhase("preparing");
+    const id = setTimeout(() => setPhase("review"), 1900);
+    return () => clearTimeout(id);
     // Only on first mount; the params are stable for this screen instance.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -152,6 +159,7 @@ export function SupplierPaymentScreen() {
       return;
     }
     setPaying(true);
+    let ok = false;
     try {
       if (!matched && saveBeneficiary) {
         await addBeneficiary({ name: beneficiaryName, account: rib, bank: detectedBank ?? "" });
@@ -163,11 +171,29 @@ export function SupplierPaymentScreen() {
         bank: detectedBank,
         reason: t("supplierPayment.reason"),
       });
-      toast.show(t("supplierPayment.toastPaid"), "success");
-      navigation.goBack();
+      ok = true;
     } finally {
       setPaying(false);
     }
+    if (!ok) return;
+
+    // OTP + animated success + bank receipt, then land on the Virements list.
+    const { viewDetails } = await confirm({
+      receipt: {
+        direction: "out",
+        title: t("supplierPayment.receiptTitle"),
+        party: beneficiaryName,
+        amount: value,
+        currency: "MAD",
+        date: new Date().toISOString(),
+        reference: `VIR${String(Date.now()).slice(-9)}`,
+        method: t("invoicing.invoices.payment.rib"),
+        account: rib,
+        bank: detectedBank,
+      },
+    });
+    if (viewDetails) navigation.navigate("Transfers");
+    else navigation.goBack();
   };
 
   const sourceNote =
@@ -183,7 +209,9 @@ export function SupplierPaymentScreen() {
     <Screen>
       <ScreenHeader title={t("supplierPayment.title")} onBack={() => navigation.goBack()} />
 
-      {phase === "intake" ? (
+      {phase === "preparing" ? (
+        <Preparing docName={docName} party={name} amount={amount} />
+      ) : phase === "intake" ? (
         <View style={styles.intake}>
           <Text variant="bodyMd" color="textSecondary">
             {t("supplierPayment.introBody")}
@@ -323,8 +351,60 @@ export function SupplierPaymentScreen() {
   );
 }
 
+/** "Document importé → préparation du virement" transition with an animated progress bar. */
+function Preparing({ docName, party, amount }: { docName: string; party: string; amount: string }) {
+  const { t } = useTranslation();
+  const styles = useStyles();
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, { toValue: 1, duration: 1700, useNativeDriver: false }).start();
+  }, [progress]);
+
+  const width = progress.interpolate({ inputRange: [0, 1], outputRange: ["8%", "100%"] });
+
+  return (
+    <View style={styles.preparing}>
+      <IconTile icon={FileText} tint="violet" size={72} />
+      <Text variant="titleLg" color="textPrimary" style={styles.prepCenter}>
+        {t("txFeedback.preparing")}
+      </Text>
+      <Text variant="bodyMd" color="textSecondary" style={styles.prepCenter}>
+        {docName || t("supplierPayment.defaultDoc")}
+      </Text>
+      <View style={styles.prepBarTrack}>
+        <Animated.View style={[styles.prepBarFill, { width }]} />
+      </View>
+      <Card variant="muted" style={styles.prepCard}>
+        <Text variant="caption" color="textSecondary">
+          {party || t("supplierPayment.beneficiaryName")}
+        </Text>
+        <AmountText value={-parseAmount(amount)} signed variant="titleLg" color="danger" />
+      </Card>
+    </View>
+  );
+}
+
 const useStyles = makeStyles((t) => ({
   intake: { gap: t.spacing.md, marginTop: t.spacing.md },
+  preparing: { alignItems: "center", gap: t.spacing.md, paddingTop: t.spacing.xxl },
+  prepCenter: { textAlign: "center" },
+  prepBarTrack: {
+    alignSelf: "stretch",
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: t.colors.surfaceMuted,
+    overflow: "hidden",
+    marginTop: t.spacing.sm,
+  },
+  prepBarFill: { height: 8, borderRadius: 4, backgroundColor: t.colors.accent },
+  prepCard: {
+    alignSelf: "stretch",
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    marginTop: t.spacing.md,
+  },
   body: { gap: t.spacing.lg, marginTop: t.spacing.md },
   docRow: { flexDirection: "row", alignItems: "center", gap: t.spacing.md },
   docInfo: { flex: 1, gap: 2 },

@@ -2,6 +2,7 @@ import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import React from "react";
 import { ActivityIndicator, View } from "react-native";
 
+import { TransactionFeedbackProvider } from "@components/index";
 import { AccountsScreen } from "@features/accounts/AccountsScreen";
 import { RibScreen } from "@features/accounts/RibScreen";
 import { CardsScreen } from "@features/cards/CardsScreen";
@@ -53,31 +54,33 @@ export function RootNavigator() {
   if (status === "guest") return <AuthNavigator />;
 
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
-      <Stack.Screen name="Tabs" component={BottomTabs} options={{ animation: "fade" }} />
-      <Stack.Screen name="Accounts" component={AccountsScreen} />
-      <Stack.Screen name="Rib" component={RibScreen} />
-      <Stack.Screen name="Cards" component={CardsScreen} />
-      <Stack.Screen name="Transactions" component={TransactionsScreen} />
-      <Stack.Screen name="Documents" component={DocumentsScreen} />
-      <Stack.Screen name="Classement" component={ClassementScreen} />
-      <Stack.Screen name="Transfers" component={TransfersScreen} />
-      <Stack.Screen name="NouveauVirement" component={NouveauVirementScreen} />
-      <Stack.Screen name="Devis" component={DevisScreen} />
-      <Stack.Screen name="NouveauDevis" component={NouveauDevisScreen} />
-      <Stack.Screen name="CommercialCycle" component={CommercialCycleScreen} />
-      <Stack.Screen name="BonsCommande" component={BonsCommandeScreen} />
-      <Stack.Screen name="BonCommandeDetail" component={BonCommandeDetailScreen} />
-      <Stack.Screen name="NouvelleFacture" component={NouvelleFactureScreen} />
-      <Stack.Screen name="FacturePreview" component={FacturePreviewScreen} />
-      <Stack.Screen name="Clients" component={ClientsScreen} />
-      <Stack.Screen name="Products" component={ProductsScreen} />
-      <Stack.Screen name="Suppliers" component={SuppliersScreen} />
-      <Stack.Screen name="SupplierInvoices" component={SupplierInvoicesScreen} />
-      <Stack.Screen name="SupplierPayment" component={SupplierPaymentScreen} />
-      <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
-      <Stack.Screen name="Stub" component={StubScreen} />
-    </Stack.Navigator>
+    <TransactionFeedbackProvider>
+      <Stack.Navigator screenOptions={{ headerShown: false, animation: "slide_from_right" }}>
+        <Stack.Screen name="Tabs" component={BottomTabs} options={{ animation: "fade" }} />
+        <Stack.Screen name="Accounts" component={AccountsScreen} />
+        <Stack.Screen name="Rib" component={RibScreen} />
+        <Stack.Screen name="Cards" component={CardsScreen} />
+        <Stack.Screen name="Transactions" component={TransactionsScreen} />
+        <Stack.Screen name="Documents" component={DocumentsScreen} />
+        <Stack.Screen name="Classement" component={ClassementScreen} />
+        <Stack.Screen name="Transfers" component={TransfersScreen} />
+        <Stack.Screen name="NouveauVirement" component={NouveauVirementScreen} />
+        <Stack.Screen name="Devis" component={DevisScreen} />
+        <Stack.Screen name="NouveauDevis" component={NouveauDevisScreen} />
+        <Stack.Screen name="CommercialCycle" component={CommercialCycleScreen} />
+        <Stack.Screen name="BonsCommande" component={BonsCommandeScreen} />
+        <Stack.Screen name="BonCommandeDetail" component={BonCommandeDetailScreen} />
+        <Stack.Screen name="NouvelleFacture" component={NouvelleFactureScreen} />
+        <Stack.Screen name="FacturePreview" component={FacturePreviewScreen} />
+        <Stack.Screen name="Clients" component={ClientsScreen} />
+        <Stack.Screen name="Products" component={ProductsScreen} />
+        <Stack.Screen name="Suppliers" component={SuppliersScreen} />
+        <Stack.Screen name="SupplierInvoices" component={SupplierInvoicesScreen} />
+        <Stack.Screen name="SupplierPayment" component={SupplierPaymentScreen} />
+        <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
+        <Stack.Screen name="Stub" component={StubScreen} />
+      </Stack.Navigator>
+    </TransactionFeedbackProvider>
   );
 }
 

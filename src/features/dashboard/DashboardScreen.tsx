@@ -115,6 +115,12 @@ export function DashboardScreen() {
       const d = new Date(iso);
       return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
     };
+    // TVA is declared per trimester in Morocco → group by calendar quarter.
+    const quarter = Math.floor(now.getMonth() / 3);
+    const thisQuarter = (iso: string) => {
+      const d = new Date(iso);
+      return d.getFullYear() === now.getFullYear() && Math.floor(d.getMonth() / 3) === quarter;
+    };
     const since30 = now.getTime() - 30 * 24 * 3600 * 1000;
     const within30 = (iso: string) => new Date(iso).getTime() >= since30;
 
@@ -127,10 +133,10 @@ export function DashboardScreen() {
       .reduce((s, inv) => s + inv.totalTTC, 0);
 
     const tvaCollected = invs
-      .filter((inv) => inv.kind === "vente" && thisMonth(inv.issueDate))
+      .filter((inv) => inv.kind === "vente" && thisQuarter(inv.issueDate))
       .reduce((s, inv) => s + vatOf(inv), 0);
     const tvaDeductible = invs
-      .filter((inv) => inv.kind === "achat" && thisMonth(inv.issueDate))
+      .filter((inv) => inv.kind === "achat" && thisQuarter(inv.issueDate))
       .reduce((s, inv) => s + vatOf(inv), 0);
 
     return {

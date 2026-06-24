@@ -15,9 +15,9 @@ const KNOWN_ISSUERS: KnownIssuer[] = [
     match: /mylegal|003521475000060/i,
     fields: {
       supplierName: "MyLegal",
-      // Generic, fully-simulated banking infos (the invoice prints none). RIB form here;
-      // the equivalent IBAN is MA64 0115 1900 0007 1234 5678 9022.
-      rib: "011519000007123456789022",
+      // Generic, fully-simulated banking infos (the invoice prints none). RIB starts with
+      // 007 → Attijariwafa Bank; the equivalent IBAN is MA64 0075 1900 0007 1234 5678 9022.
+      rib: "007519000007123456789022",
       ice: "003521475000060",
       amount: 4680,
     },

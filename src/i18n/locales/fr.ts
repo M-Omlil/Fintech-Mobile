@@ -7,6 +7,7 @@ export const fr = {
     apply: "Appliquer",
     cancel: "Annuler",
     close: "Fermer",
+    done: "Terminé",
     save: "Enregistrer",
     skip: "Ignorer",
     showAll: "Afficher tout",
@@ -25,6 +26,17 @@ export const fr = {
     settingsToast: "Les paramètres arrivent bientôt",
     copied: "Copié",
     shared: "Partagé",
+  },
+
+  txFeedback: {
+    otpTitle: "Vérification",
+    otpSubtitle: "Saisissez le code à 4 chiffres reçu par SMS",
+    otpValidate: "Valider l'opération",
+    otpHint: "Code de démonstration — toute combinaison à 4 chiffres est acceptée.",
+    viewDetails: "Voir les détails",
+    receipt: "Reçu (voir · télécharger · partager)",
+    preparing: "Préparation du virement…",
+    prepared: "Virement prêt à être validé",
   },
 
   auth: {
@@ -308,6 +320,7 @@ export const fr = {
       recentEmpty: "Aucun virement récent.",
       toastSent: "Virement envoyé",
       toastScheduled: "Virement programmé",
+      receiptTitle: "Virement émis",
       validationMissing: "Renseignez le bénéficiaire, le RIB/IBAN et un montant valide.",
     },
     picker: {
@@ -366,6 +379,7 @@ export const fr = {
     payAnother: "Importer un autre document",
     reason: "Paiement facture fournisseur",
     toastPaid: "Virement fournisseur envoyé",
+    receiptTitle: "Paiement fournisseur émis",
     validationAmount: "Le montant extrait est invalide.",
     validationRib: "RIB du destinataire manquant.",
     validationName: "Renseignez le nom du destinataire.",
@@ -674,8 +688,8 @@ export const fr = {
       treasurySub: "Entrées − sorties",
       ca: "C.A ce mois",
       caSub: "Factures de vente",
-      tva: "TVA due ce mois",
-      tvaSub: "Collectée − déductible",
+      tva: "TVA due ce trimestre",
+      tvaSub: "Trimestre · collectée − déductible",
     },
     metric: {
       ca: "Chiffre d'affaires",

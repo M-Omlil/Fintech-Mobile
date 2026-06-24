@@ -16,9 +16,15 @@ export { ProgressBar, type ProgressBarProps } from "./ProgressBar";
 export { ToggleRow, type ToggleRowProps } from "./ToggleRow";
 export { ScreenHeader, type ScreenHeaderProps } from "./ScreenHeader";
 export { Screen, type ScreenProps } from "./Screen";
+export { FadeSlideIn, type FadeSlideInProps } from "./FadeSlideIn";
 export { OptionCard, type OptionCardProps } from "./OptionCard";
 export { Field, type FieldProps } from "./Field";
 export { SelectField, type SelectFieldProps, type SelectOption } from "./SelectField";
 export { DateField, type DateFieldProps, type DatePreset } from "./DateField";
 export { PromptSheet, type PromptSheetProps, type PromptField } from "./PromptSheet";
 export { ToastProvider, useToast, type ToastVariant } from "./Toast/ToastProvider";
+export {
+  TransactionFeedbackProvider,
+  useTransactionFeedback,
+  type ConfirmInput,
+} from "./TransactionFeedback";

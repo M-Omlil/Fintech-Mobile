@@ -18,6 +18,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "@i18n/index";
 import { ToastProvider } from "@components/index";
+import { navigationRef } from "@navigation/ref";
 import { RootNavigator } from "@navigation/RootNavigator";
 import { SessionProvider } from "@services/auth/SessionProvider";
 import { DIProvider } from "@services/di/DIProvider";
@@ -64,7 +65,7 @@ export default function App() {
             <ToastProvider>
               <View style={styles.root}>
                 <StatusBar style="dark" />
-                <NavigationContainer theme={navTheme} onReady={onReady}>
+                <NavigationContainer ref={navigationRef} theme={navTheme} onReady={onReady}>
                   <RootNavigator />
                 </NavigationContainer>
               </View>

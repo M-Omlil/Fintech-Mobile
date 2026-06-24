@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { View } from "react-native";
 
-import { Button, Screen, SectionHeader, Text, useToast } from "@components/index";
+import { Button, FadeSlideIn, Screen, SectionHeader, Text, useToast } from "@components/index";
 import { useAccounts, useBusiness, useRecentTransactions } from "@hooks/index";
 import type { RootStackParamList } from "@navigation/types";
 import { makeStyles } from "@theme/index";
@@ -78,8 +78,10 @@ export function HomeScreen() {
             }
           />
           {recent && recent.length > 0 ? (
-            recent.map((transaction) => (
-              <TransactionRow key={transaction.id} transaction={transaction} />
+            recent.map((transaction, i) => (
+              <FadeSlideIn key={transaction.id} index={i}>
+                <TransactionRow transaction={transaction} />
+              </FadeSlideIn>
             ))
           ) : (
             <Text variant="bodyMd" color="textSecondary">

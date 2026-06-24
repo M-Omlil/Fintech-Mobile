@@ -170,6 +170,12 @@ export function buildAmanoSeed(now: Date = new Date()) {
 
   const clients: Client[] = [
     {
+      id: "cli-mylegal-pro",
+      name: "MyLegal Pro",
+      email: "pro@mylegal.ma",
+      legal: { ice: "003521475000060" },
+    },
+    {
       id: "cli-ilyasse",
       name: "Ilyasse Belhamdounia",
       email: "ilyasse.belhamdounia@gmail.com",
