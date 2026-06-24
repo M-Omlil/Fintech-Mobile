@@ -9,7 +9,7 @@ scenes onto the app's real flows and data (Amano / MyLegal, MAD). One file per u
 |------|-------|---------------|
 | `mylegal-1-compte-pro.mp4` | **LE COMPTE PRO** | Accueil (solde + virement entrant +100 000) → **RIB marocain** (RIB/IBAN + QR) → **Menu** déroulé jusqu'en bas (tout l'éventail des fonctionnalités) |
 | `mylegal-2-facture-fournisseur.mp4` | **FACTURATION · Cas 1 — facture fournisseur** | Facturation → **scan** (sélecteur de fichiers **PDF uniquement**) → extraction auto (MyLegal · 4 680 DH · RIB Attijariwafa, bénéficiaire créé) → **Préparation du virement** → valider (OTP) → **Virement émis ✓** |
-| `mylegal-3-facture-client.mp4` | **FACTURATION · Cas 2 — facture client** | **+ Nouvelle facture** (MyLegal Pro · PC portable Dell · 13 800 DH) → Aperçu → 5 s plus tard le popup de validation s'ouvre seul : **Facture payée · +13 800 DH · MyLegal Pro** |
+| `mylegal-3-facture-client.mp4` | **FACTURATION · Cas 2 — facture client** | **+ Nouvelle facture** (MyLegal Pro · PC portable Dell · 13 800 DH, **paiement par Lien de paiement**) → Valider et envoyer → retour à la liste des factures → 5 s plus tard le popup s'ouvre seul : **Facture payée · +13 800 DH · MyLegal Pro** |
 | `mylegal-4-dashboard.mp4` | **LE DASHBOARD** | 4 widgets (Solde dispo · Trésorerie 30 j · C.A ce mois · TVA due ce trimestre) + graphique **personnalisable** (Courbe → Barres → Secteurs) |
 
 Recorded via `adb screenrecord` with paced fixed-coordinate taps; the transaction popup
