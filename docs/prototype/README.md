@@ -1,5 +1,22 @@
 # Amano — Prototype screen recordings
 
+## Latest demo set (neon redesign · light theme)
+
+Recorded on the standalone release APK (720×1600), **light theme**, with the coherent
+Jan→today seed. One file per use case, each within its target duration:
+
+| File | Duration | What it shows |
+|------|----------|---------------|
+| `v1-compte-rib-cards-menu.mp4` | ≤10 s | Accueil (Compte pro · logo MyLegal + « Bonjour, M. Ilyasse Belhamdounia » · solde) → **RIB** (RIB/IBAN + QR) → **Cartes** (carte ONE · logo MyLegal) → **Menu** déroulé |
+| `v2-creation-facture-lien-paiement.mp4` | ≤10 s | **+ Nouvelle facture** → client (Riad Zitoun) → ligne produit → mode de paiement **Lien de paiement** → **Aperçu de la facture** |
+| `v3-paiement-facture-client.mp4` | ~5 s | Liste des factures → après 2–3 s, l'**animation de validation** s'ouvre seule : **Paiement reçu ✓ · +19 800 DH · Clinique Al Madina** (Lien de paiement) |
+| `v4-dashboard.mp4` | ≤10 s | Tableau de bord — figures **count-up**, graphes qui **se dessinent** : ajout d'une 2ᵉ série (C.A + Trésorerie), bascule **Courbe → Barres** (barres groupées), changement de période |
+
+The V3 validation animation was driven by a temporary `useFocusEffect` listener in
+`FacturesScreen` (auto-fires the `TransactionFeedback` success card after ~2.5 s on the
+listing), reverted after recording. Recorded via `adb screenrecord` with paced
+fixed-coordinate taps (uiautomator drifts mid-recording).
+
 ## Demo-day script takes (one use case per video)
 
 Recorded on the standalone release APK (1080×2400), mapping the `Script vidéo · 60s — mylegal.ma`
