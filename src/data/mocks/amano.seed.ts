@@ -93,7 +93,7 @@ export function buildAmanoSeed(now: Date = new Date()) {
   const business: Business = {
     id: "amano-ei",
     name: "Amano",
-    ownerName: "Younes Belhamdounia",
+    ownerName: "Ilyasse Belhamdounia",
     rib: "007 780 0001 2345 6789 0101 44",
     iban: "MA64 0077 8000 0123 4567 8901 0144",
     currency: "MAD",
@@ -107,8 +107,8 @@ export function buildAmanoSeed(now: Date = new Date()) {
     {
       id: "acc-main",
       name: "Compte principal",
-      // Solde = encaissement 100 000 − dépenses réglées (4 680 + 20 000 + 1 000 + 8 500) = 65 820.
-      balance: 100000 - 4680 - 20000 - 1000 - 8500,
+      // Recomputed below from the full Jan→today movement history (coherent solde).
+      balance: 0,
       currency: "MAD",
       status: "active",
       isMain: true,
@@ -617,16 +617,288 @@ export function buildAmanoSeed(now: Date = new Date()) {
     },
   ];
 
+  // ── Historique cohérent : activité mensuelle de janvier jusqu'à aujourd'hui ──
+  // Génère ventes encaissées, achats réglés et charges récurrentes pour chaque mois
+  // écoulé de l'année, afin que le Tableau de bord (cumul annuel) affiche une vraie
+  // tendance. Le mois courant est déjà couvert par les mouvements "headline" ci-dessus.
+  const monthDay = (monthIndex: number, day: number, hour = 9): string =>
+    new Date(now.getFullYear(), monthIndex, day, hour, 0, 0, 0).toISOString();
+
+  const SALE_TEMPLATES: { client: string; items: Omit<LineItem, "id">[] }[] = [
+    {
+      client: "Clinique Al Madina",
+      items: [
+        {
+          description: "PC bureau HP ProDesk 400 G9 (i5/8Go/256Go)",
+          quantity: 5,
+          unitPrice: 8900,
+          vatRate: 20,
+        },
+        {
+          description: "Écran Dell 24'' P2422H Full HD",
+          quantity: 5,
+          unitPrice: 1850,
+          vatRate: 20,
+        },
+      ],
+    },
+    {
+      client: "École Al Khawarizmi",
+      items: [
+        {
+          description: "Switch Cisco Catalyst 1000 24 ports",
+          quantity: 3,
+          unitPrice: 6800,
+          vatRate: 20,
+        },
+        { description: "Onduleur APC Back-UPS 650VA", quantity: 6, unitPrice: 720, vatRate: 20 },
+      ],
+    },
+    {
+      client: "Cabinet Comptable Bennani",
+      items: [
+        {
+          description: "PC portable Dell Latitude 5440 (i5/16Go/512Go)",
+          quantity: 4,
+          unitPrice: 11500,
+          vatRate: 20,
+        },
+      ],
+    },
+    {
+      client: "Riad Zitoun (Hôtellerie)",
+      items: [
+        {
+          description: "Imprimante laser HP LaserJet Pro M404dn",
+          quantity: 3,
+          unitPrice: 2400,
+          vatRate: 20,
+        },
+        {
+          description: "Contrat de maintenance IT (mensuel)",
+          quantity: 6,
+          unitPrice: 2500,
+          vatRate: 20,
+        },
+      ],
+    },
+    {
+      client: "MyLegal Pro",
+      items: [
+        {
+          description: "Disque SSD Samsung 870 EVO 1 To",
+          quantity: 10,
+          unitPrice: 1150,
+          vatRate: 20,
+        },
+        {
+          description: "Installation & configuration (sur site)",
+          quantity: 4,
+          unitPrice: 1500,
+          vatRate: 20,
+        },
+      ],
+    },
+    {
+      client: "Clinique Al Madina",
+      items: [
+        {
+          description: "PC portable Dell Latitude 5440 (i5/16Go/512Go)",
+          quantity: 2,
+          unitPrice: 11500,
+          vatRate: 20,
+        },
+        {
+          description: "Écran Dell 24'' P2422H Full HD",
+          quantity: 2,
+          unitPrice: 1850,
+          vatRate: 20,
+        },
+      ],
+    },
+  ];
+
+  const PURCHASE_TEMPLATES: { supplier: string; items: Omit<LineItem, "id">[] }[] = [
+    {
+      supplier: "Disway",
+      items: [
+        {
+          description: "Lot matériel informatique (revente)",
+          quantity: 1,
+          unitPrice: 18000,
+          vatRate: 20,
+        },
+      ],
+    },
+    {
+      supplier: "Uptoconnect SARL",
+      items: [
+        {
+          description: "Licences & intégration plateforme",
+          quantity: 1,
+          unitPrice: 9500,
+          vatRate: 20,
+        },
+      ],
+    },
+    {
+      supplier: "Disway",
+      items: [
+        {
+          description: "Lot accessoires & périphériques",
+          quantity: 1,
+          unitPrice: 12000,
+          vatRate: 20,
+        },
+      ],
+    },
+  ];
+
+  const histInvoices: Invoice[] = [];
+  const histTransactions: Transaction[] = [];
+  let fvSeq = 5;
+  let faSeq = 5;
+
+  for (let mi = 0; mi < now.getMonth(); mi += 1) {
+    // Deux ventes encaissées par mois.
+    for (let s = 0; s < 2; s += 1) {
+      const tmpl = SALE_TEMPLATES[(mi * 2 + s) % SALE_TEMPLATES.length]!;
+      const day = s === 0 ? 9 : 21;
+      const ls = lines(tmpl.items);
+      const totals = computeTotalsFromLines(ls);
+      histInvoices.push({
+        id: `inv-h-fv-${mi}-${s}`,
+        number: `FV-2026/${String(fvSeq).padStart(3, "0")}`,
+        kind: "vente",
+        clientName: tmpl.client,
+        issueDate: monthDay(mi, day),
+        dueDate: monthDay(mi, day + 30),
+        status: "payee",
+        lines: ls,
+        ...totals,
+        legal: { ...business.legal },
+        paidAt: monthDay(mi, day + 3),
+        paidMethod: "rib",
+      });
+      fvSeq += 1;
+      histTransactions.push({
+        id: `tx-h-enc-${mi}-${s}`,
+        label: `Encaissement ${tmpl.client}`,
+        counterparty: tmpl.client,
+        type: "revenu",
+        amount: totals.totalTTC,
+        currency: "MAD",
+        date: monthDay(mi, day + 3),
+        status: "executed",
+        receipt: "added",
+        method: "transfer",
+        accountId: "acc-main",
+      });
+    }
+
+    // Un achat réglé par mois.
+    const ptmpl = PURCHASE_TEMPLATES[mi % PURCHASE_TEMPLATES.length]!;
+    const pls = lines(ptmpl.items);
+    const ptotals = computeTotalsFromLines(pls);
+    histInvoices.push({
+      id: `inv-h-fa-${mi}`,
+      number: `FA-2026/${String(faSeq).padStart(3, "0")}`,
+      kind: "achat",
+      clientName: ptmpl.supplier,
+      issueDate: monthDay(mi, 12),
+      dueDate: monthDay(mi, 32),
+      status: "payee",
+      lines: pls,
+      ...ptotals,
+      legal: { ...business.legal },
+      paidAt: monthDay(mi, 13),
+      paidMethod: "rib",
+    });
+    faSeq += 1;
+    histTransactions.push({
+      id: `tx-h-ach-${mi}`,
+      label: `Virement ${ptmpl.supplier}`,
+      counterparty: ptmpl.supplier,
+      type: "depense",
+      amount: ptotals.totalTTC,
+      currency: "MAD",
+      date: monthDay(mi, 13),
+      status: "executed",
+      receipt: "added",
+      method: "transfer",
+      accountId: "acc-main",
+    });
+
+    // Charges récurrentes (sans facture) : loyer, logiciels SaaS, fibre.
+    histTransactions.push(
+      {
+        id: `tx-h-loyer-${mi}`,
+        label: "Loyer bureau Maarif",
+        counterparty: "SCI Oasis Latitudes",
+        type: "depense",
+        amount: 6500,
+        currency: "MAD",
+        date: monthDay(mi, 2),
+        status: "executed",
+        receipt: "added",
+        method: "transfer",
+        accountId: "acc-main",
+      },
+      {
+        id: `tx-h-saas-${mi}`,
+        label: "Abonnements logiciels (SaaS)",
+        counterparty: "Éditeurs SaaS",
+        type: "depense",
+        amount: 1530,
+        currency: "MAD",
+        date: monthDay(mi, 4),
+        status: "executed",
+        receipt: "added",
+        method: "card",
+        accountId: "acc-main",
+      },
+      {
+        id: `tx-h-fibre-${mi}`,
+        label: "Abonnement Fibre Pro",
+        counterparty: "Maroc Telecom",
+        type: "depense",
+        amount: 1200,
+        currency: "MAD",
+        date: monthDay(mi, 6),
+        status: "executed",
+        receipt: "added",
+        method: "transfer",
+        accountId: "acc-main",
+      },
+    );
+  }
+
+  // Flux complets, du plus récent au plus ancien.
+  const allTransactions = [...transactions, ...histTransactions].sort(
+    (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime(),
+  );
+  const allInvoices = [...invoices, ...histInvoices].sort(
+    (a, b) => new Date(b.issueDate).getTime() - new Date(a.issueDate).getTime(),
+  );
+
+  // Solde du compte principal cohérent avec l'ensemble des mouvements.
+  const mainAccount = accounts.find((a) => a.isMain);
+  if (mainAccount) {
+    mainAccount.balance = allTransactions
+      .filter((x) => x.accountId === "acc-main")
+      .reduce((s, x) => s + (x.type === "revenu" ? x.amount : -x.amount), 0);
+  }
+
   return {
     business,
     accounts,
     cards,
-    transactions,
+    transactions: allTransactions,
     transfers,
     beneficiaries,
     quotes,
     purchaseOrders,
-    invoices,
+    invoices: allInvoices,
     clients,
     products,
     suppliers,

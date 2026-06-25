@@ -47,7 +47,7 @@ type RootDoc = {
   data: Record<string, BusinessData>;
 };
 
-const STORAGE_KEY = "amano.store.v21";
+const STORAGE_KEY = "amano.store.v22";
 
 /** Demo credentials, surfaced on the login screen so the app is usable immediately. */
 export const DEMO_CREDENTIALS = { email: "demo@amano.app", password: "amano1234" } as const;

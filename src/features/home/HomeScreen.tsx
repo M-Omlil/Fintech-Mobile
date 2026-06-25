@@ -37,7 +37,7 @@ export function HomeScreen() {
   return (
     <Screen>
       <HomeHeader
-        businessName={business?.name ?? ""}
+        name={business?.ownerName ?? ""}
         onOpenInbox={() => toast.show(t("common.comingSoonToast"), "info")}
       />
 

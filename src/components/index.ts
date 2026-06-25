@@ -1,5 +1,6 @@
 export { Text, type TextProps } from "./Text";
 export { AmountText, type AmountTextProps } from "./AmountText";
+export { AnimatedAmount, useCountUp, type AnimatedAmountProps } from "./AnimatedAmount";
 export { Button, type ButtonProps, type ButtonVariant } from "./Button";
 export { Card, type CardProps, type CardVariant } from "./Card";
 export { ListItem, type ListItemProps } from "./ListItem";

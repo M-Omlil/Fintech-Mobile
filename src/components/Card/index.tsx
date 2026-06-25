@@ -1,6 +1,6 @@
 import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { StyleSheet, View, type ViewStyle } from "react-native";
+import { StyleSheet, View, type StyleProp, type ViewStyle } from "react-native";
 
 import { makeStyles, useTheme } from "@theme/index";
 import type { Spacing } from "@theme/tokens";
@@ -12,7 +12,7 @@ export type CardProps = {
   /** Padding token; defaults to `lg`. Pass `"none"` for edge-to-edge content. */
   padding?: Spacing | "none";
   children: React.ReactNode;
-  style?: ViewStyle;
+  style?: StyleProp<ViewStyle>;
 };
 
 /**

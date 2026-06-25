@@ -112,6 +112,8 @@ export const fr = {
 
   home: {
     inbox: "Boîte de réception",
+    greetingDay: "Bonjour",
+    greetingEvening: "Bonsoir",
     reminderMessage: "Ajoutez de l'argent pour payer votre abonnement avant le 5 juin",
     paySubscription: "Payer l'abonnement",
     balanceTitle: "Solde",
@@ -692,23 +694,23 @@ export const fr = {
       tva: "TVA due ce trimestre",
       tvaSub: "Trimestre · collectée − déductible",
     },
+    prelevementTva: "Prélèvement TVA",
     metric: {
       ca: "Chiffre d'affaires",
       encaissements: "Encaissements",
       depenses: "Dépenses",
       tresorerie: "Trésorerie",
     },
-    chartType: {
-      line: "Courbe",
-      bar: "Barres",
-      pie: "Secteurs",
+    graph: {
+      revenue: "C.A / Trésorerie",
+      flows: "Encaissements / Dépenses",
     },
-    chartTypeToggle: "Changer le type de graphique",
     duration: {
       "7j": "7 j",
       "30j": "30 j",
       "6m": "6 mois",
       "12m": "12 mois",
+      ytd: "Année",
     },
   },
 
