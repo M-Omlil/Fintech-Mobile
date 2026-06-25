@@ -737,15 +737,55 @@ export function buildAmanoSeed(now: Date = new Date()) {
     },
   ];
 
+  // Monthly cash-flow plan (Jan→May) — deliberately uneven so the cumulative trésorerie
+  // rises and dips (some months net-negative: a big equipment buy, a tax instalment)
+  // instead of a smooth line. Indices reference SALE_TEMPLATES / PURCHASE_TEMPLATES.
+  type ExtraExpense = {
+    label: string;
+    counterparty: string;
+    amountTTC: number;
+    /** When set, also book a matching achat invoice (TVA déductible) for this HT. */
+    invoiceHT?: number;
+  };
+  const MONTHLY_PLAN: { saleIdx: number[]; purchaseIdx?: number; extra?: ExtraExpense }[] = [
+    // Janvier — gros mois (deux ventes).
+    { saleIdx: [0, 2], purchaseIdx: 0 },
+    // Février — creux : achat d'un serveur (grosse sortie).
+    {
+      saleIdx: [1],
+      extra: {
+        label: "Achat serveur & matériel réseau",
+        counterparty: "Disway",
+        amountTTC: 72000,
+        invoiceHT: 60000,
+      },
+    },
+    // Mars — reprise.
+    { saleIdx: [4, 3], purchaseIdx: 1 },
+    // Avril — creux : acompte IS (impôt sur les sociétés).
+    {
+      saleIdx: [5],
+      extra: {
+        label: "Acompte IS (impôt sur les sociétés)",
+        counterparty: "Direction Générale des Impôts",
+        amountTTC: 48000,
+      },
+    },
+    // Mai — gros mois.
+    { saleIdx: [0, 1], purchaseIdx: 2 },
+  ];
+
   const histInvoices: Invoice[] = [];
   const histTransactions: Transaction[] = [];
   let fvSeq = 5;
   let faSeq = 5;
 
   for (let mi = 0; mi < now.getMonth(); mi += 1) {
-    // Deux ventes encaissées par mois.
-    for (let s = 0; s < 2; s += 1) {
-      const tmpl = SALE_TEMPLATES[(mi * 2 + s) % SALE_TEMPLATES.length]!;
+    const plan = MONTHLY_PLAN[mi % MONTHLY_PLAN.length]!;
+
+    // Ventes encaissées du mois.
+    plan.saleIdx.forEach((idx, s) => {
+      const tmpl = SALE_TEMPLATES[idx]!;
       const day = s === 0 ? 9 : 21;
       const ls = lines(tmpl.items);
       const totals = computeTotalsFromLines(ls);
@@ -777,40 +817,81 @@ export function buildAmanoSeed(now: Date = new Date()) {
         method: "transfer",
         accountId: "acc-main",
       });
+    });
+
+    // Achat réglé du mois (le cas échéant).
+    if (plan.purchaseIdx !== undefined) {
+      const ptmpl = PURCHASE_TEMPLATES[plan.purchaseIdx]!;
+      const pls = lines(ptmpl.items);
+      const ptotals = computeTotalsFromLines(pls);
+      histInvoices.push({
+        id: `inv-h-fa-${mi}`,
+        number: `FA-2026/${String(faSeq).padStart(3, "0")}`,
+        kind: "achat",
+        clientName: ptmpl.supplier,
+        issueDate: monthDay(mi, 12),
+        dueDate: monthDay(mi, 32),
+        status: "payee",
+        lines: pls,
+        ...ptotals,
+        legal: { ...business.legal },
+        paidAt: monthDay(mi, 13),
+        paidMethod: "rib",
+      });
+      faSeq += 1;
+      histTransactions.push({
+        id: `tx-h-ach-${mi}`,
+        label: `Virement ${ptmpl.supplier}`,
+        counterparty: ptmpl.supplier,
+        type: "depense",
+        amount: ptotals.totalTTC,
+        currency: "MAD",
+        date: monthDay(mi, 13),
+        status: "executed",
+        receipt: "added",
+        method: "transfer",
+        accountId: "acc-main",
+      });
     }
 
-    // Un achat réglé par mois.
-    const ptmpl = PURCHASE_TEMPLATES[mi % PURCHASE_TEMPLATES.length]!;
-    const pls = lines(ptmpl.items);
-    const ptotals = computeTotalsFromLines(pls);
-    histInvoices.push({
-      id: `inv-h-fa-${mi}`,
-      number: `FA-2026/${String(faSeq).padStart(3, "0")}`,
-      kind: "achat",
-      clientName: ptmpl.supplier,
-      issueDate: monthDay(mi, 12),
-      dueDate: monthDay(mi, 32),
-      status: "payee",
-      lines: pls,
-      ...ptotals,
-      legal: { ...business.legal },
-      paidAt: monthDay(mi, 13),
-      paidMethod: "rib",
-    });
-    faSeq += 1;
-    histTransactions.push({
-      id: `tx-h-ach-${mi}`,
-      label: `Virement ${ptmpl.supplier}`,
-      counterparty: ptmpl.supplier,
-      type: "depense",
-      amount: ptotals.totalTTC,
-      currency: "MAD",
-      date: monthDay(mi, 13),
-      status: "executed",
-      receipt: "added",
-      method: "transfer",
-      accountId: "acc-main",
-    });
+    // Grosse dépense ponctuelle → creux de trésorerie (avec facture d'achat si fournie).
+    if (plan.extra) {
+      const e = plan.extra;
+      if (e.invoiceHT !== undefined) {
+        const els = lines([
+          { description: e.label, quantity: 1, unitPrice: e.invoiceHT, vatRate: 20 },
+        ]);
+        const etotals = computeTotalsFromLines(els);
+        histInvoices.push({
+          id: `inv-h-fax-${mi}`,
+          number: `FA-2026/${String(faSeq).padStart(3, "0")}`,
+          kind: "achat",
+          clientName: e.counterparty,
+          issueDate: monthDay(mi, 15),
+          dueDate: monthDay(mi, 35),
+          status: "payee",
+          lines: els,
+          ...etotals,
+          legal: { ...business.legal },
+          paidAt: monthDay(mi, 16),
+          paidMethod: "rib",
+        });
+        faSeq += 1;
+      }
+      histTransactions.push({
+        id: `tx-h-extra-${mi}`,
+        label: e.label,
+        counterparty: e.counterparty,
+        type: "depense",
+        amount: e.amountTTC,
+        currency: "MAD",
+        date: monthDay(mi, 15),
+        status: "executed",
+        receipt: "added",
+        method: "transfer",
+        accountId: "acc-main",
+      });
+    }
 
     // Charges récurrentes (sans facture) : loyer, logiciels SaaS, fibre.
     histTransactions.push(
