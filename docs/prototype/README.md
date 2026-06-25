@@ -1,21 +1,23 @@
 # Amano — Prototype screen recordings
 
-## Latest demo set (neon redesign · light theme)
+## Latest demo set (neon redesign · light theme · FHD)
 
-Recorded on the standalone release APK (720×1600), **light theme**, with the coherent
-Jan→today seed. One file per use case, each within its target duration:
+Recorded on the standalone release APK at **native 1080×2400 (FHD)**, **light theme**, with
+the coherent Jan→today seed. One file per use case:
 
-| File | Duration | What it shows |
-|------|----------|---------------|
-| `v1-compte-rib-cards-menu.mp4` | ≤10 s | Accueil (Compte pro · logo MyLegal + « Bonjour, M. Ilyasse Belhamdounia » · solde) → **RIB** (RIB/IBAN + QR) → **Cartes** (carte ONE · logo MyLegal) → **Menu** déroulé |
-| `v2-creation-facture-lien-paiement.mp4` | ≤10 s | **+ Nouvelle facture** → client (Riad Zitoun) → ligne produit → mode de paiement **Lien de paiement** → **Aperçu de la facture** |
-| `v3-paiement-facture-client.mp4` | ~5 s | Liste des factures → après 2–3 s, l'**animation de validation** s'ouvre seule : **Paiement reçu ✓ · +19 800 DH · Clinique Al Madina** (Lien de paiement) |
-| `v4-dashboard.mp4` | ≤10 s | Tableau de bord — figures **count-up**, graphes qui **se dessinent** : ajout d'une 2ᵉ série (C.A + Trésorerie), bascule **Courbe → Barres** (barres groupées), changement de période |
+| File | What it shows |
+|------|---------------|
+| `v1-compte-rib-cards-menu.mp4` | Accueil (Compte pro · logo MyLegal + « Bonjour, M. Ilyasse Belhamdounia » · solde) → **RIB** (RIB/IBAN + QR) → **Cartes** (carte · logo MyLegal) → **Menu** déroulé **jusqu'en bas** |
+| `v2-creation-facture-lien-paiement.mp4` | **+ Nouvelle facture** → client (Riad Zitoun) → ligne produit → mode de paiement **Lien de paiement** → Aperçu → Valider et envoyer → retour à la liste → l'**animation de validation** s'ouvre seule : **Paiement reçu ✓ · +13 800 DH · Riad Zitoun** |
+| `v3-facture-fournisseur-pin.mp4` | Facturation → **scan** → **importer un PDF** (facture fournisseur) → extraction OCR (Disway SA · 12 480 DH · RIB) → **Payer par virement** → **code PIN** (4 chiffres, sans mention « code de démonstration ») → **Paiement fournisseur émis ✓** |
+| `v4-dashboard.mp4` | Tableau de bord — figures **count-up**, graphes qui **se dessinent** : bascule **Courbe → Barres**, changement de période, puis **défilement vers le 2ᵉ graphe** (Encaissements / Dépenses) qui s'anime aussi |
 
-The V3 validation animation was driven by a temporary `useFocusEffect` listener in
-`FacturesScreen` (auto-fires the `TransactionFeedback` success card after ~2.5 s on the
-listing), reverted after recording. Recorded via `adb screenrecord` with paced
-fixed-coordinate taps (uiautomator drifts mid-recording).
+The V2 validation animation was driven by a temporary `useFocusEffect` listener in
+`FacturesScreen` (auto-fires the `TransactionFeedback` success card ~2.5 s after returning
+to the listing), reverted after recording. The « code de démonstration » OTP hint was
+removed permanently. Recorded via `adb screenrecord` at native resolution with paced
+fixed-coordinate taps (uiautomator drifts mid-recording); the supplier PDF is selected from
+the Android SAF document picker.
 
 ## Demo-day script takes (one use case per video)
 

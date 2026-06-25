@@ -165,9 +165,6 @@ function OtpCard({ onValid, onCancel }: { onValid: () => void; onCancel: () => v
         disabled={!ready}
         style={styles.cta}
       />
-      <Text variant="caption" color="textSecondary" style={styles.center}>
-        {t("txFeedback.otpHint")}
-      </Text>
     </View>
   );
 }

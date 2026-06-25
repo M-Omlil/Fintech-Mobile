@@ -32,7 +32,6 @@ export const fr = {
     otpTitle: "Vérification",
     otpSubtitle: "Saisissez le code à 4 chiffres reçu par SMS",
     otpValidate: "Valider l'opération",
-    otpHint: "Code de démonstration — toute combinaison à 4 chiffres est acceptée.",
     viewDetails: "Voir les détails",
     receipt: "Reçu (voir · télécharger · partager)",
     preparing: "Préparation du virement…",
