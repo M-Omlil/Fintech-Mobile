@@ -132,17 +132,19 @@ export function computeChartData(
       .reduce((s, x) => s + pick(x), 0);
 
   if (metric === "ca") {
-    return buckets.map((b) => ({
-      label: b.label,
-      value: invs
+    // Cumulative revenue billed across the window (a steadily building curve).
+    let running = 0;
+    return buckets.map((b) => {
+      running += invs
         .filter(
           (i) =>
             i.kind === "vente" &&
             new Date(i.issueDate).getTime() >= b.start &&
             new Date(i.issueDate).getTime() < b.end,
         )
-        .reduce((s, i) => s + i.totalTTC, 0),
-    }));
+        .reduce((s, i) => s + i.totalTTC, 0);
+      return { label: b.label, value: running };
+    });
   }
   if (metric === "encaissements") {
     return buckets.map((b) => ({
@@ -156,10 +158,9 @@ export function computeChartData(
       value: sumTx(b.start, b.end, (x) => (x.type === "depense" ? x.amount : 0)),
     }));
   }
-  // tresorerie → cumulative net flow across the window.
-  let running = 0;
-  return buckets.map((b) => {
-    running += sumTx(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : -x.amount));
-    return { label: b.label, value: running };
-  });
+  // tresorerie → per-period net flow (the treasury variation each bucket).
+  return buckets.map((b) => ({
+    label: b.label,
+    value: sumTx(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : -x.amount)),
+  }));
 }

@@ -300,7 +300,7 @@ export function buildAmanoSeed(now: Date = new Date()) {
   const transactions: Transaction[] = [
     tx(
       "tx-v-ilyasse",
-      "Virement Ilyasse Belhamdounia",
+      "Apport en compte courant — Ilyasse Belhamdounia",
       "Ilyasse Belhamdounia",
       "revenu",
       100000,
@@ -393,29 +393,12 @@ export function buildAmanoSeed(now: Date = new Date()) {
   // → facture), so the demo starts with none.
   const purchaseOrders: PurchaseOrder[] = [];
 
-  // Factures liées aux transactions : les 4 dépenses sont des factures d'achat réglées,
-  // l'encaissement de 100 000 est une facture de vente réglée. Les autres FV (Clinique,
-  // École, Cabinet) sont des ventes en attente de règlement (pipeline → couleurs de statut).
+  // Factures liées aux transactions : les 4 dépenses sont des factures d'achat réglées.
+  // L'encaissement de 100 000 (Ilyasse, le gérant) est un APPORT en compte courant — une
+  // entrée de trésorerie, pas du chiffre d'affaires — donc aucune facture de vente. Le C.A
+  // reste ainsi inférieur aux encaissements. Les FV ci-dessous (Clinique, École, Cabinet)
+  // sont des ventes en attente de règlement (pipeline → couleurs de statut).
   const invoices: Invoice[] = [
-    // Facture de vente réglée → "Virement Ilyasse Belhamdounia +100 000".
-    invoiceOf(
-      "inv-fv-ilyasse",
-      "FV-2026/001",
-      "Ilyasse Belhamdounia",
-      now,
-      10,
-      -20,
-      "payee",
-      business.legal,
-      [
-        {
-          description: "Vente PC portables Dell Latitude & accessoires (lot)",
-          quantity: 1,
-          unitPrice: 83333.33,
-          vatRate: 20,
-        },
-      ],
-    ),
     // Ventes en attente / en retard (pas encore encaissées → pas de transaction).
     invoiceOf(
       "inv-fv-clinique",
