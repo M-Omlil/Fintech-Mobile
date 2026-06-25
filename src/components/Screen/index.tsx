@@ -73,7 +73,8 @@ export function Screen({
   );
 }
 
-const useStyles = makeStyles((t) => ({
-  safe: { flex: 1, backgroundColor: t.colors.background },
+const useStyles = makeStyles(() => ({
+  // Transparent: the app-wide neon canvas gradient (App.tsx) is the backdrop.
+  safe: { flex: 1, backgroundColor: "transparent" },
   flex: { flex: 1 },
 }));

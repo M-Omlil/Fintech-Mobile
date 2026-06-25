@@ -11,10 +11,11 @@ import {
   NavigationContainer,
   type Theme as NavTheme,
 } from "@react-navigation/native";
+import { LinearGradient } from "expo-linear-gradient";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
 import React, { useCallback, useMemo } from "react";
-import { StyleSheet, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import "@i18n/index";
@@ -32,13 +33,14 @@ function AppShell({ onReady }: { onReady: () => void }) {
   const theme = useTheme();
   const { scheme } = useThemeMode();
 
+  // Background is transparent so the neon canvas gradient shows through every screen.
   const navTheme = useMemo<NavTheme>(() => {
     const base = scheme === "dark" ? DarkTheme : DefaultTheme;
     return {
       ...base,
       colors: {
         ...base.colors,
-        background: theme.colors.background,
+        background: "transparent",
         card: theme.colors.surface,
         primary: theme.colors.accent,
         text: theme.colors.textPrimary,
@@ -48,12 +50,17 @@ function AppShell({ onReady }: { onReady: () => void }) {
   }, [scheme, theme]);
 
   return (
-    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+    <LinearGradient
+      colors={theme.gradients.appCanvas}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.root}
+    >
       <StatusBar style={scheme === "dark" ? "light" : "dark"} />
       <NavigationContainer ref={navigationRef} theme={navTheme} onReady={onReady}>
         <RootNavigator />
       </NavigationContainer>
-    </View>
+    </LinearGradient>
   );
 }
 

@@ -71,6 +71,16 @@ export const elevation = {
     shadowRadius: 20,
     elevation: 12,
   },
+  /**
+   * Neon glow — a centered colored halo (no offset). Spread it and supply a vivid
+   * `shadowColor` (the theme's `glow`) to make a control or hero card luminesce.
+   */
+  glow: {
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.55,
+    shadowRadius: 18,
+    elevation: 10,
+  },
 } as const;
 
 export type Spacing = keyof typeof spacing;

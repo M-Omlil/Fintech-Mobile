@@ -1,5 +1,6 @@
+import { LinearGradient } from "expo-linear-gradient";
 import React from "react";
-import { ActivityIndicator, Pressable, View, type ViewStyle } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View, type ViewStyle } from "react-native";
 
 import { Text } from "@components/Text";
 import { makeStyles, useTheme } from "@theme/index";
@@ -67,6 +68,15 @@ export function Button({
         style,
       ]}
     >
+      {/* Primary CTA: neon gradient fill with a luminous top rim. */}
+      {variant === "primary" ? (
+        <LinearGradient
+          colors={theme.gradients.card}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.gradientFill}
+        />
+      ) : null}
       {loading ? (
         <ActivityIndicator color={contentColor} />
       ) : (
@@ -91,6 +101,7 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center",
     justifyContent: "center",
     paddingHorizontal: t.spacing.xl,
+    overflow: "hidden",
   },
   fullWidth: { alignSelf: "stretch" },
   content: {
@@ -98,7 +109,14 @@ const useStyles = makeStyles((t) => ({
     alignItems: "center",
     gap: t.spacing.sm,
   },
-  primary: { backgroundColor: t.colors.primary },
+  gradientFill: { ...StyleSheet.absoluteFillObject },
+  primary: {
+    backgroundColor: t.colors.primary,
+    borderWidth: t.sizing.hairline,
+    borderColor: "rgba(255,255,255,0.45)",
+    shadowColor: t.colors.glow,
+    ...t.elevation.glow,
+  },
   secondary: {
     backgroundColor: "transparent",
     borderWidth: t.sizing.hairline,
