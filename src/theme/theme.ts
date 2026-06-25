@@ -117,16 +117,25 @@ const darkTints: Tints = {
 export type Gradients = {
   appCanvas: readonly [string, string, string];
   card: readonly [string, string];
+  /** Soft panel sheen for `surface` cards — fades toward the canvas so there is no
+   * hard filled-rectangle edge (top slightly lifted, bottom melts into the bg). */
+  panel: readonly [string, string];
+  /** Same idea for the intentionally-dark `dark` card variant. */
+  panelDark: readonly [string, string];
 };
 
 const lightGradients: Gradients = {
   appCanvas: ["#EEF2FE", "#F4F7FB", "#E7F1FF"],
   card: [palette.violet, palette.oceanBlue],
+  panel: ["rgba(255,255,255,0.97)", "rgba(255,255,255,0.80)"],
+  panelDark: ["rgba(10,12,40,0.55)", "rgba(4,6,24,0.42)"],
 };
 
 const darkGradients: Gradients = {
   appCanvas: [palette.deepIndigo, palette.nightIndigo, palette.royalIndigo],
   card: ["#3A2EA8", palette.oceanBlue],
+  panel: ["rgba(255,255,255,0.07)", "rgba(255,255,255,0.025)"],
+  panelDark: ["rgba(12,14,42,0.52)", "rgba(4,6,24,0.36)"],
 };
 
 const shared = {
