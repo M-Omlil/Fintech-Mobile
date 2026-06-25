@@ -158,9 +158,11 @@ export function computeChartData(
       value: sumTx(b.start, b.end, (x) => (x.type === "depense" ? x.amount : 0)),
     }));
   }
-  // tresorerie → per-period net flow (the treasury variation each bucket).
-  return buckets.map((b) => ({
-    label: b.label,
-    value: sumTx(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : -x.amount)),
-  }));
+  // tresorerie → cumulative net flow (a rising curve building to the period net, so it
+  // evolves alongside the cumulative C.A and ends below it).
+  let running = 0;
+  return buckets.map((b) => {
+    running += sumTx(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : -x.amount));
+    return { label: b.label, value: running };
+  });
 }
