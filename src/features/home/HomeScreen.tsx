@@ -61,6 +61,7 @@ export function HomeScreen() {
             onTransfer={() => navigation.navigate("Transfers")}
             onAddDocument={() => navigation.navigate("Documents")}
             onFactures={() => navigation.navigate("Tabs", { screen: "Facturation" })}
+            onCards={() => navigation.navigate("Cards")}
             onRib={() => navigation.navigate("Rib")}
           />
         </View>

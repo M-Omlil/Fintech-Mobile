@@ -1,4 +1,5 @@
 import type { BottomTabBarProps } from "@react-navigation/bottom-tabs";
+import { BlurView } from "expo-blur";
 import {
   ChartColumnBig,
   House,
@@ -7,7 +8,7 @@ import {
   type LucideIcon,
 } from "lucide-react-native";
 import React, { useEffect, useRef } from "react";
-import { Animated, Pressable, View } from "react-native";
+import { Animated, Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Text } from "@components/index";
@@ -85,6 +86,15 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
       style={[styles.wrapper, { bottom: insets.bottom + theme.spacing.sm }]}
     >
       <View style={styles.pill}>
+        {/* Frosted glass: blur the scrolling content, then a strong navy tint so the
+            bar reads solid (no bleed-through) even where Android blur is weak. */}
+        <BlurView
+          intensity={theme.scheme === "dark" ? 36 : 50}
+          tint={theme.scheme === "dark" ? "dark" : "light"}
+          experimentalBlurMethod="dimezisBlurView"
+          style={StyleSheet.absoluteFill}
+        />
+        <View style={[StyleSheet.absoluteFill, styles.tint]} pointerEvents="none" />
         {state.routes.map((route, index) => {
           const focused = state.index === index;
           const { options } = descriptors[route.key] ?? {};
@@ -124,12 +134,16 @@ const useStyles = makeStyles((t) => ({
     width: "100%",
     height: t.sizing.tabBarHeight,
     borderRadius: t.radii.pill,
-    backgroundColor: t.colors.surfaceDark,
+    overflow: "hidden",
     borderWidth: t.sizing.hairline,
-    borderColor: t.colors.cardBorder,
+    borderColor: t.scheme === "dark" ? "rgba(255,255,255,0.14)" : "rgba(39,171,252,0.22)",
     paddingHorizontal: t.spacing.sm,
     shadowColor: t.colors.glow,
     ...t.elevation.tabBar,
+  },
+  // Frost over the blur — scheme-aware, high enough alpha to fully hide scrolling content.
+  tint: {
+    backgroundColor: t.scheme === "dark" ? "rgba(9,12,38,0.82)" : "rgba(247,250,253,0.82)",
   },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2 },
 }));

@@ -47,9 +47,9 @@ const lightColors: ThemeColors = {
   success: "#1FA971",
   danger: "#E5484D",
   overlay: "rgba(6,26,56,0.45)",
-  shadow: palette.violet,
+  shadow: palette.midnightNavy,
   glow: palette.oceanBlue,
-  cardBorder: "rgba(39,171,252,0.22)",
+  cardBorder: "rgba(39,171,252,0.12)",
 };
 
 /**
@@ -59,23 +59,23 @@ const lightColors: ThemeColors = {
  */
 const darkColors: ThemeColors = {
   background: palette.deepIndigo,
-  surface: "rgba(255,255,255,0.06)",
-  surfaceMuted: "rgba(255,255,255,0.04)",
+  surface: "rgba(255,255,255,0.07)",
+  surfaceMuted: "rgba(255,255,255,0.05)",
   surfaceAccent: "rgba(110,86,247,0.20)",
-  surfaceDark: "rgba(4,6,24,0.45)",
+  surfaceDark: "rgba(4,6,24,0.40)",
   textPrimary: "#F3F5FF",
   textSecondary: "#A7AED6",
   textOnPrimary: palette.white,
   textOnDark: palette.white,
   primary: palette.violet,
   accent: palette.oceanBlue,
-  border: "rgba(255,255,255,0.12)",
+  border: "rgba(255,255,255,0.10)",
   success: "#3DD68C",
   danger: "#FF6166",
   overlay: "rgba(6,4,24,0.66)",
   shadow: "#000000",
   glow: palette.oceanBlue,
-  cardBorder: "rgba(170,180,255,0.22)",
+  cardBorder: "rgba(255,255,255,0.10)",
 };
 
 /**

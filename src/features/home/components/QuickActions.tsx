@@ -1,4 +1,4 @@
-import { ArrowLeftRight, FilePlus2, Landmark, Receipt } from "lucide-react-native";
+import { ArrowLeftRight, CreditCard, FilePlus2, Landmark, Receipt } from "lucide-react-native";
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { ScrollView } from "react-native";
@@ -11,11 +11,18 @@ export type QuickActionsProps = {
   onTransfer?: () => void;
   onAddDocument?: () => void;
   onFactures?: () => void;
+  onCards?: () => void;
   onRib?: () => void;
 };
 
-/** Raccourcis row (mega-prompt §4) — Virement · Ajouter doc (P2) · Factures · RIB. */
-export function QuickActions({ onTransfer, onAddDocument, onFactures, onRib }: QuickActionsProps) {
+/** Raccourcis row (mega-prompt §4) — Virement · Ajouter doc (P2) · Factures · Cartes · RIB. */
+export function QuickActions({
+  onTransfer,
+  onAddDocument,
+  onFactures,
+  onCards,
+  onRib,
+}: QuickActionsProps) {
   const { t } = useTranslation();
   const styles = useStyles();
 
@@ -23,6 +30,7 @@ export function QuickActions({ onTransfer, onAddDocument, onFactures, onRib }: Q
     { key: "transfer", icon: ArrowLeftRight, label: t("home.makeTransfer"), onPress: onTransfer },
     { key: "document", icon: FilePlus2, label: t("home.addDocument"), onPress: onAddDocument },
     { key: "factures", icon: Receipt, label: t("home.factures"), onPress: onFactures },
+    { key: "cards", icon: CreditCard, label: t("home.cards"), onPress: onCards },
     { key: "rib", icon: Landmark, label: t("home.rib"), onPress: onRib },
   ];
 

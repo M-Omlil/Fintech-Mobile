@@ -26,7 +26,9 @@ export function Card({ variant = "surface", padding = "lg", children, style }: C
 }
 
 const useStyles = makeStyles((t) => ({
-  // Every surface carries the luminous neon rim — the "glass" edge of the look.
+  // Every surface carries a soft glass rim — subtle, not a hard outline. The neon
+  // glow is reserved for hero/interactive elements (Button, tab bar), so dense lists
+  // of cards stay calm.
   base: {
     borderRadius: t.radii.card,
     borderWidth: t.sizing.hairline,
@@ -34,14 +36,14 @@ const useStyles = makeStyles((t) => ({
   },
   surface: {
     backgroundColor: t.colors.surface,
-    shadowColor: t.colors.glow,
+    shadowColor: t.colors.shadow,
     ...t.elevation.card,
   },
   muted: { backgroundColor: t.colors.surfaceMuted },
   accent: { backgroundColor: t.colors.surfaceAccent },
   dark: {
     backgroundColor: t.colors.surfaceDark,
-    shadowColor: t.colors.glow,
+    shadowColor: t.colors.shadow,
     ...t.elevation.card,
   },
 }));

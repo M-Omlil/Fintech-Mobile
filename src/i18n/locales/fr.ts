@@ -125,6 +125,7 @@ export const fr = {
     makeTransfer: "Effectuer un virement",
     addDocument: "Ajouter un document",
     factures: "Factures",
+    cards: "Cartes",
     rib: "RIB",
     lastTransactions: "Dernières transactions",
   },
