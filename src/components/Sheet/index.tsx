@@ -67,7 +67,7 @@ const useStyles = makeStyles((t) => ({
   scrim: { flex: 1, backgroundColor: t.colors.overlay, justifyContent: "flex-end" },
   scrimTouchable: { flex: 1 },
   panel: {
-    backgroundColor: t.colors.surface,
+    backgroundColor: t.colors.surfaceSolid,
     borderTopLeftRadius: t.radii.sheet,
     borderTopRightRadius: t.radii.sheet,
     paddingHorizontal: t.spacing.lg,

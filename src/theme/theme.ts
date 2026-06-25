@@ -10,6 +10,9 @@ import { typography } from "./typography";
 export type ThemeColors = {
   background: string;
   surface: string;
+  /** Opaque surface for modals/sheets that float over the app (must fully hide the
+   * content behind them — translucent `surface` would let it bleed through). */
+  surfaceSolid: string;
   surfaceMuted: string;
   surfaceAccent: string;
   surfaceDark: string;
@@ -34,6 +37,7 @@ export type ThemeColors = {
 const lightColors: ThemeColors = {
   background: "#EEF2FE",
   surface: palette.white,
+  surfaceSolid: palette.white,
   surfaceMuted: palette.cloudBlue,
   surfaceAccent: palette.paleSky,
   surfaceDark: palette.midnightNavy,
@@ -60,6 +64,7 @@ const lightColors: ThemeColors = {
 const darkColors: ThemeColors = {
   background: palette.deepIndigo,
   surface: "rgba(255,255,255,0.09)",
+  surfaceSolid: "#16143A",
   surfaceMuted: "rgba(255,255,255,0.06)",
   surfaceAccent: "rgba(110,86,247,0.20)",
   surfaceDark: "rgba(4,6,24,0.40)",

@@ -262,7 +262,7 @@ const useStyles = makeStyles((t) => ({
   card: {
     width: "100%",
     maxWidth: 380,
-    backgroundColor: t.colors.surface,
+    backgroundColor: t.colors.surfaceSolid,
     borderRadius: t.radii.sheet,
     padding: t.spacing.xl,
     alignItems: "center",
