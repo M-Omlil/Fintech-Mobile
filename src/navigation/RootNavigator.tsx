@@ -22,6 +22,7 @@ import { SubscriptionsScreen } from "@features/invoicing/subscriptions/Subscript
 import { SupplierInvoicesScreen } from "@features/invoicing/suppliers/SupplierInvoicesScreen";
 import { SupplierPaymentScreen } from "@features/invoicing/suppliers/SupplierPaymentScreen";
 import { SuppliersScreen } from "@features/invoicing/suppliers/SuppliersScreen";
+import { SettingsScreen } from "@features/settings/SettingsScreen";
 import { TransactionsScreen } from "@features/transactions/TransactionsScreen";
 import { NouveauVirementScreen } from "@features/transfers/NouveauVirementScreen";
 import { TransfersScreen } from "@features/transfers/TransfersScreen";
@@ -78,6 +79,7 @@ export function RootNavigator() {
         <Stack.Screen name="SupplierInvoices" component={SupplierInvoicesScreen} />
         <Stack.Screen name="SupplierPayment" component={SupplierPaymentScreen} />
         <Stack.Screen name="Subscriptions" component={SubscriptionsScreen} />
+        <Stack.Screen name="Settings" component={SettingsScreen} />
         <Stack.Screen name="Stub" component={StubScreen} />
       </Stack.Navigator>
     </TransactionFeedbackProvider>

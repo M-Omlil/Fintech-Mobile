@@ -52,21 +52,21 @@ const lightColors: ThemeColors = {
  * dark surface; refine when dark mode ships.
  */
 const darkColors: ThemeColors = {
-  background: "#0A1426",
-  surface: "#0F1E38",
-  surfaceMuted: "#14253F",
-  surfaceAccent: "#1B3357",
-  surfaceDark: "#04101F",
-  textPrimary: palette.white,
-  textSecondary: "#8DA1B5",
+  background: "#07142B",
+  surface: "#0E2143",
+  surfaceMuted: "#142A50",
+  surfaceAccent: "#1B3A68",
+  surfaceDark: "#050E20",
+  textPrimary: "#F2F6FB",
+  textSecondary: "#93A7BE",
   textOnPrimary: palette.midnightNavy,
   textOnDark: palette.white,
   primary: palette.white,
   accent: palette.oceanBlue,
-  border: "rgba(141,161,181,0.24)",
+  border: "rgba(147,167,189,0.16)",
   success: "#3DD68C",
   danger: "#FF6166",
-  overlay: "rgba(2,8,16,0.6)",
+  overlay: "rgba(2,8,18,0.66)",
   shadow: "#000000",
 };
 
@@ -76,7 +76,7 @@ const darkColors: ThemeColors = {
  * within the calm Amano range; a dark theme can override this map later.
  */
 export type Tint = { bg: string; fg: string };
-const tints = {
+const lightTints = {
   blue: { bg: "rgba(39,171,252,0.12)", fg: "#1689D4" },
   green: { bg: "rgba(31,169,113,0.12)", fg: "#188A5D" },
   red: { bg: "rgba(229,72,77,0.12)", fg: "#D23B40" },
@@ -86,7 +86,20 @@ const tints = {
   navy: { bg: "rgba(6,26,56,0.06)", fg: palette.midnightNavy },
 } as const;
 
-export type TintName = keyof typeof tints;
+export type TintName = keyof typeof lightTints;
+export type Tints = Record<TintName, Tint>;
+
+/** Dark-mode tints: brighter foregrounds on slightly stronger washes so IconTiles stay
+ * legible on a dark surface (the light `navy` fg would vanish otherwise). */
+const darkTints: Tints = {
+  blue: { bg: "rgba(39,171,252,0.18)", fg: "#5CC0FF" },
+  green: { bg: "rgba(61,214,140,0.18)", fg: "#5FE0A4" },
+  red: { bg: "rgba(255,97,102,0.18)", fg: "#FF8E92" },
+  peach: { bg: "rgba(229,138,72,0.20)", fg: "#F0A968" },
+  yellow: { bg: "rgba(229,196,72,0.20)", fg: "#E9CF5E" },
+  violet: { bg: "rgba(124,108,214,0.24)", fg: "#AEA1F2" },
+  navy: { bg: "rgba(255,255,255,0.08)", fg: "#CBD8E6" },
+};
 
 /** Brand gradients (e.g. the card visual). Fixed across schemes. */
 const gradients = {
@@ -100,14 +113,24 @@ const shared = {
   durations,
   elevation,
   typography,
-  tints,
   gradients,
 } as const;
 
 export type Theme = typeof shared & {
   scheme: "light" | "dark";
   colors: ThemeColors;
+  tints: Tints;
 };
 
-export const lightTheme: Theme = { scheme: "light", colors: lightColors, ...shared };
-export const darkTheme: Theme = { scheme: "dark", colors: darkColors, ...shared };
+export const lightTheme: Theme = {
+  scheme: "light",
+  colors: lightColors,
+  tints: lightTints,
+  ...shared,
+};
+export const darkTheme: Theme = {
+  scheme: "dark",
+  colors: darkColors,
+  tints: darkTints,
+  ...shared,
+};

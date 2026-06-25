@@ -9,6 +9,12 @@ export {
   type Tint,
   type TintName,
 } from "./theme";
-export { ThemeProvider, ThemeContext } from "./ThemeProvider";
+export {
+  ThemeProvider,
+  ThemeContext,
+  useThemeMode,
+  type ThemeMode,
+  type ColorScheme,
+} from "./ThemeProvider";
 export { useTheme } from "./useTheme";
 export { makeStyles } from "./makeStyles";

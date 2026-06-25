@@ -16,7 +16,6 @@ import {
   ScreenHeader,
   SectionHeader,
   Text,
-  useToast,
 } from "@components/index";
 import type { RootStackParamList } from "@navigation/types";
 import { useSession } from "@services/auth/SessionProvider";
@@ -33,7 +32,6 @@ export function MenuScreen() {
   const styles = useStyles();
   const navigation = useNavigation<Nav>();
   const { logout } = useSession();
-  const toast = useToast();
 
   const go = useCallback(
     (target: MenuTarget) => {
@@ -75,7 +73,7 @@ export function MenuScreen() {
             variant="surface"
             size={40}
             label={t("common.settings")}
-            onPress={() => toast.show(t("common.settingsToast"), "info")}
+            onPress={() => navigation.navigate("Settings")}
           />
         }
       />

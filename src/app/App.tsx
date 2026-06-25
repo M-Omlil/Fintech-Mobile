@@ -6,13 +6,14 @@ import {
   useFonts,
 } from "@expo-google-fonts/inter";
 import {
+  DarkTheme,
   DefaultTheme,
   NavigationContainer,
   type Theme as NavTheme,
 } from "@react-navigation/native";
 import * as SplashScreen from "expo-splash-screen";
 import { StatusBar } from "expo-status-bar";
-import React, { useCallback } from "react";
+import React, { useCallback, useMemo } from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -22,25 +23,42 @@ import { navigationRef } from "@navigation/ref";
 import { RootNavigator } from "@navigation/RootNavigator";
 import { SessionProvider } from "@services/auth/SessionProvider";
 import { DIProvider } from "@services/di/DIProvider";
-import { lightTheme, ThemeProvider } from "@theme/index";
+import { ThemeProvider, useTheme, useThemeMode } from "@theme/index";
 
 SplashScreen.preventAutoHideAsync().catch(() => undefined);
 
-/** Navigation container theme aligned to Amano tokens (fogWhite canvas). */
-const navTheme: NavTheme = {
-  ...DefaultTheme,
-  colors: {
-    ...DefaultTheme.colors,
-    background: lightTheme.colors.background,
-    card: lightTheme.colors.surface,
-    primary: lightTheme.colors.accent,
-    text: lightTheme.colors.textPrimary,
-    border: lightTheme.colors.border,
-  },
-};
+/** App canvas + navigation, themed from the active scheme (re-themes on light/dark switch). */
+function AppShell({ onReady }: { onReady: () => void }) {
+  const theme = useTheme();
+  const { scheme } = useThemeMode();
+
+  const navTheme = useMemo<NavTheme>(() => {
+    const base = scheme === "dark" ? DarkTheme : DefaultTheme;
+    return {
+      ...base,
+      colors: {
+        ...base.colors,
+        background: theme.colors.background,
+        card: theme.colors.surface,
+        primary: theme.colors.accent,
+        text: theme.colors.textPrimary,
+        border: theme.colors.border,
+      },
+    };
+  }, [scheme, theme]);
+
+  return (
+    <View style={[styles.root, { backgroundColor: theme.colors.background }]}>
+      <StatusBar style={scheme === "dark" ? "light" : "dark"} />
+      <NavigationContainer ref={navigationRef} theme={navTheme} onReady={onReady}>
+        <RootNavigator />
+      </NavigationContainer>
+    </View>
+  );
+}
 
 /**
- * App entry. Provider order: SafeArea → Theme → Session → DI → Navigation. i18n is
+ * App entry. Provider order: SafeArea → Theme → Session → DI → Toast → Navigation. i18n is
  * initialized via side-effect import. First paint is gated on Inter loading.
  */
 export default function App() {
@@ -59,16 +77,11 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <ThemeProvider scheme="light">
+      <ThemeProvider>
         <SessionProvider>
           <DIProvider>
             <ToastProvider>
-              <View style={styles.root}>
-                <StatusBar style="dark" />
-                <NavigationContainer ref={navigationRef} theme={navTheme} onReady={onReady}>
-                  <RootNavigator />
-                </NavigationContainer>
-              </View>
+              <AppShell onReady={onReady} />
             </ToastProvider>
           </DIProvider>
         </SessionProvider>
@@ -78,5 +91,5 @@ export default function App() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: lightTheme.colors.background },
+  root: { flex: 1 },
 });

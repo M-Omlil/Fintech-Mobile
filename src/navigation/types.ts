@@ -59,6 +59,7 @@ export type RootStackParamList = {
       }
     | undefined;
   Subscriptions: undefined;
+  Settings: undefined;
   /** Generic placeholder for "Plus tard" / phased screens (§8). */
   Stub: { titleKey: StubKey };
 };
