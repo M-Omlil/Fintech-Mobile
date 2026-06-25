@@ -89,7 +89,7 @@ export function FloatingTabBar({ state, descriptors, navigation }: BottomTabBarP
         {/* Frosted glass: blur the scrolling content, then a strong navy tint so the
             bar reads solid (no bleed-through) even where Android blur is weak. */}
         <BlurView
-          intensity={theme.scheme === "dark" ? 48 : 95}
+          intensity={theme.scheme === "dark" ? 48 : 52}
           tint={theme.scheme === "dark" ? "dark" : "light"}
           experimentalBlurMethod="dimezisBlurView"
           style={StyleSheet.absoluteFill}
@@ -141,11 +141,11 @@ const useStyles = makeStyles((t) => ({
     shadowColor: t.colors.glow,
     ...t.elevation.tabBar,
   },
-  // Wash over the blur. Dark: a deep indigo at higher alpha so the bar stays on-theme
-  // (the blur alone washes out to grey) while keeping a subtle frost. Light: low alpha
-  // so the frosted blur clearly reads.
+  // Wash over the blur — a higher alpha so the bar reads as a consistent Midnight Navy
+  // (dark) / Fog White (light) frost on every screen, instead of washing out to grey on
+  // pages that have nothing scrolling behind the bar.
   tint: {
-    backgroundColor: t.scheme === "dark" ? "rgba(13,11,46,0.62)" : "rgba(247,250,253,0.40)",
+    backgroundColor: t.scheme === "dark" ? "rgba(6,26,56,0.66)" : "rgba(243,246,249,0.66)",
   },
   item: { flex: 1, alignItems: "center", justifyContent: "center", gap: 2 },
 }));

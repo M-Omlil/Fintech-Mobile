@@ -6,22 +6,13 @@
 export const palette = {
   oceanBlue: "#27ABFC",
   midnightNavy: "#061A38",
-  /** Lighter navy used as the card-gradient end stop. */
+  /** Lighter navy used for dark-mode surfaces and the card-gradient end stop. */
   navyTint: "#0E3A66",
   steelGray: "#718696",
   fogWhite: "#F3F6F9",
   cloudBlue: "#EBF6FE",
   paleSky: "#D8EFFB",
   white: "#FFFFFF",
-  /**
-   * Neon anchors — a blue-violet glow range layered on the brand blues to give the
-   * app its "neon" canvas/glow (image-inspired). Used only via theme gradients/glow,
-   * never referenced raw by components.
-   */
-  violet: "#6E56F7",
-  deepIndigo: "#0C0A2B",
-  nightIndigo: "#171653",
-  royalIndigo: "#241C6B",
 } as const;
 
 export type PaletteColor = keyof typeof palette;
