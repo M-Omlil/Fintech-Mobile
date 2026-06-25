@@ -705,6 +705,12 @@ export const fr = {
       revenue: "C.A / Trésorerie",
       flows: "Encaissements / Dépenses",
     },
+    chartType: {
+      line: "Courbe",
+      bar: "Barres",
+      pie: "Secteurs",
+    },
+    chartTypeToggle: "Changer le type de graphique",
     duration: {
       "7j": "7 j",
       "30j": "30 j",

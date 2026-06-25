@@ -2,11 +2,14 @@ import { LinearGradient } from "expo-linear-gradient";
 import { Check, Pencil } from "lucide-react-native";
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Pressable, TextInput, View } from "react-native";
+import { Image, Pressable, TextInput, View } from "react-native";
 
 import { Text } from "@components/index";
 import type { Card } from "@domain/index";
 import { makeStyles, useTheme } from "@theme/index";
+
+// MyLegal wordmark (white) shown on the card instead of the product label.
+const CARD_LOGO = require("../../../../assets/image.png");
 
 export type CardVisualProps = {
   card: Card;
@@ -45,9 +48,12 @@ export function CardVisual({ card, onRename }: CardVisualProps) {
       style={styles.card}
     >
       <View style={styles.topRow}>
-        <Text variant="titleLg" color="textOnDark">
-          {card.productLabel}
-        </Text>
+        <Image
+          source={CARD_LOGO}
+          style={styles.logo}
+          resizeMode="contain"
+          accessibilityLabel="MyLegal"
+        />
         <View style={styles.nicknameRow}>
           {editing ? (
             <TextInput
@@ -102,6 +108,7 @@ const useStyles = makeStyles((t) => ({
     ...t.elevation.card,
   },
   topRow: { flexDirection: "row", justifyContent: "space-between", alignItems: "flex-start" },
+  logo: { width: 120, height: 22 },
   nicknameRow: { flexDirection: "row", alignItems: "center", gap: t.spacing.xs },
   input: {
     color: t.colors.textOnDark,

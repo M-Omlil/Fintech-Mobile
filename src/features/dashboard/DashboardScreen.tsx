@@ -3,89 +3,23 @@ import { useTranslation } from "react-i18next";
 import { Pressable, View } from "react-native";
 
 import { AnimatedAmount, Card, FadeSlideIn, Screen, ScreenHeader, Text } from "@components/index";
-import type { Invoice, Transaction } from "@domain/index";
+import type { Invoice } from "@domain/index";
 import { useAccounts, useInvoices, useTransactions } from "@hooks/index";
-import { makeStyles, useTheme } from "@theme/index";
+import { makeStyles } from "@theme/index";
 import type { ThemeColors } from "@theme/theme";
 
-import { TrendChart, type TrendSeries } from "./components/TrendChart";
-
-const MONTHS_SHORT = [
-  "janv.",
-  "févr.",
-  "mars",
-  "avr.",
-  "mai",
-  "juin",
-  "juil.",
-  "août",
-  "sept.",
-  "oct.",
-  "nov.",
-  "déc.",
-] as const;
-
-type DurationKey = "7j" | "30j" | "6m" | "12m" | "ytd";
-const DURATION_KEYS: DurationKey[] = ["7j", "30j", "6m", "12m", "ytd"];
+import { MetricGraph, type GraphMetric } from "./components/MetricGraph";
+import { buildBuckets, DURATION_KEYS, periodConfig, type DurationKey } from "./dashboardData";
 
 const vatOf = (inv: Invoice): number => inv.totalTTC - inv.totalHT;
 
-function startOfDay(d: Date): Date {
-  const c = new Date(d);
-  c.setHours(0, 0, 0, 0);
-  return c;
-}
-
-/** Bucket unit + count for a period. "ytd" = months from January to the current month. */
-function periodConfig(now: Date, key: DurationKey): { unit: "day" | "month"; count: number } {
-  switch (key) {
-    case "7j":
-      return { unit: "day", count: 7 };
-    case "30j":
-      return { unit: "day", count: 30 };
-    case "6m":
-      return { unit: "month", count: 6 };
-    case "12m":
-      return { unit: "month", count: 12 };
-    case "ytd":
-      return { unit: "month", count: now.getMonth() + 1 };
-  }
-}
-
-/** Time buckets (day or month) ending today, oldest first. */
-function buildBuckets(now: Date, unit: "day" | "month", count: number) {
-  const buckets: { start: number; end: number; label: string }[] = [];
-  for (let i = count - 1; i >= 0; i -= 1) {
-    if (unit === "day") {
-      const s = startOfDay(new Date(now.getFullYear(), now.getMonth(), now.getDate() - i));
-      const e = new Date(s);
-      e.setDate(e.getDate() + 1);
-      buckets.push({
-        start: s.getTime(),
-        end: e.getTime(),
-        label: `${s.getDate()}/${s.getMonth() + 1}`,
-      });
-    } else {
-      const s = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const e = new Date(now.getFullYear(), now.getMonth() - i + 1, 1);
-      buckets.push({
-        start: s.getTime(),
-        end: e.getTime(),
-        label: MONTHS_SHORT[s.getMonth()] ?? "",
-      });
-    }
-  }
-  return buckets;
-}
-
 /**
  * Tableau de bord. A static summary row (Solde dispo · Prélèvement TVA), a single period
- * filter that drives everything below it, two filterable card rows, and two trend graphs —
- * all with count-up figures and a drawing-on chart reveal.
+ * filter that drives everything below it, two filterable card rows, and two graphs — each
+ * graph shows one metric at a time with its own stat + line/bar/pie toggle.
  */
 export function DashboardScreen() {
   const { t } = useTranslation();
-  const theme = useTheme();
   const styles = useStyles();
 
   const { data: transactions } = useTransactions();
@@ -94,9 +28,10 @@ export function DashboardScreen() {
 
   const [duration, setDuration] = useState<DurationKey>("ytd");
 
+  const txns = useMemo(() => transactions ?? [], [transactions]);
+  const invs = useMemo(() => invoices ?? [], [invoices]);
+
   const model = useMemo(() => {
-    const txns = transactions ?? [];
-    const invs = invoices ?? [];
     const now = new Date();
     const mainBalance = (accounts ?? []).find((a) => a.isMain)?.balance ?? 0;
 
@@ -115,57 +50,32 @@ export function DashboardScreen() {
 
     const cfg = periodConfig(now, duration);
     const buckets = buildBuckets(now, cfg.unit, cfg.count);
-    const labels = buckets.map((b) => b.label);
+    const start = buckets[0]?.start ?? 0;
+    const end = buckets[buckets.length - 1]?.end ?? now.getTime();
+    const inRange = (iso: string) => {
+      const ts = new Date(iso).getTime();
+      return ts >= start && ts < end;
+    };
 
-    const sumTx = (start: number, end: number, pick: (x: Transaction) => number) =>
-      txns
-        .filter((x) => {
-          const ts = x.date ? new Date(x.date).getTime() : NaN;
-          return ts >= start && ts < end;
-        })
-        .reduce((s, x) => s + pick(x), 0);
-
-    const caSeries = buckets.map((b) =>
-      invs
-        .filter(
-          (i) =>
-            i.kind === "vente" &&
-            new Date(i.issueDate).getTime() >= b.start &&
-            new Date(i.issueDate).getTime() < b.end,
-        )
-        .reduce((s, i) => s + i.totalTTC, 0),
-    );
-    const encSeries = buckets.map((b) =>
-      sumTx(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : 0)),
-    );
-    const depSeries = buckets.map((b) =>
-      sumTx(b.start, b.end, (x) => (x.type === "depense" ? x.amount : 0)),
-    );
-    let running = 0;
-    const treSeries = buckets.map((b) => {
-      running += sumTx(b.start, b.end, (x) => (x.type === "revenu" ? x.amount : -x.amount));
-      return running;
-    });
-
-    const caTotal = caSeries.reduce((a, b) => a + b, 0);
-    const encTotal = encSeries.reduce((a, b) => a + b, 0);
-    const depTotal = depSeries.reduce((a, b) => a + b, 0);
-    const treTotal = treSeries[treSeries.length - 1] ?? 0;
+    const caTotal = invs
+      .filter((i) => i.kind === "vente" && inRange(i.issueDate))
+      .reduce((s, i) => s + i.totalTTC, 0);
+    const encTotal = txns
+      .filter((x) => x.type === "revenu" && inRange(x.date))
+      .reduce((s, x) => s + x.amount, 0);
+    const depTotal = txns
+      .filter((x) => x.type === "depense" && inRange(x.date))
+      .reduce((s, x) => s + x.amount, 0);
 
     return {
       soldeDispo: mainBalance,
       tvaPrelevement: tvaCollected - tvaDeductible,
       caTotal,
-      treTotal,
+      treTotal: encTotal - depTotal,
       encTotal,
       depTotal,
-      labels,
-      caSeries,
-      treSeries,
-      encSeries,
-      depSeries,
     };
-  }, [transactions, invoices, accounts, duration]);
+  }, [txns, invs, accounts, duration]);
 
   const stat = (label: string, value: number, color: keyof ThemeColors, signed?: boolean) => (
     <Card variant="surface" style={styles.card}>
@@ -176,36 +86,27 @@ export function DashboardScreen() {
     </Card>
   );
 
-  const revenueSeries: TrendSeries[] = [
+  const revenueMetrics: GraphMetric[] = [
+    { key: "ca", label: t("dashboard.metric.ca"), color: "accent", total: model.caTotal },
     {
-      key: "ca",
-      label: t("dashboard.metric.ca"),
-      color: theme.colors.accent,
-      values: model.caSeries,
-      total: model.caTotal,
-    },
-    {
-      key: "tre",
+      key: "tresorerie",
       label: t("dashboard.metric.tresorerie"),
-      color: theme.colors.textPrimary,
-      values: model.treSeries,
+      color: "textPrimary",
       total: model.treTotal,
       signed: true,
     },
   ];
-  const flowSeries: TrendSeries[] = [
+  const flowMetrics: GraphMetric[] = [
     {
-      key: "enc",
+      key: "encaissements",
       label: t("dashboard.metric.encaissements"),
-      color: theme.colors.success,
-      values: model.encSeries,
+      color: "success",
       total: model.encTotal,
     },
     {
-      key: "dep",
+      key: "depenses",
       label: t("dashboard.metric.depenses"),
-      color: theme.colors.danger,
-      values: model.depSeries,
+      color: "danger",
       total: model.depTotal,
     },
   ];
@@ -222,7 +123,7 @@ export function DashboardScreen() {
         </View>
       </FadeSlideIn>
 
-      {/* Period filter — drives the cards and graphs below */}
+      {/* Global period filter — drives the cards and both graphs */}
       <FadeSlideIn index={1}>
         <View style={styles.filters}>
           {DURATION_KEYS.map((key) => {
@@ -262,22 +163,24 @@ export function DashboardScreen() {
         </View>
       </FadeSlideIn>
 
-      {/* Graphs */}
+      {/* Graphs — one metric at a time, each with its own stat + line/bar/pie toggle */}
       <FadeSlideIn index={4}>
-        <Card variant="surface" style={styles.chartCard}>
-          <Text variant="titleMd" color="textPrimary">
-            {t("dashboard.graph.revenue")}
-          </Text>
-          <TrendChart series={revenueSeries} labels={model.labels} />
-        </Card>
+        <MetricGraph
+          title={t("dashboard.graph.revenue")}
+          metrics={revenueMetrics}
+          duration={duration}
+          transactions={txns}
+          invoices={invs}
+        />
       </FadeSlideIn>
       <FadeSlideIn index={5}>
-        <Card variant="surface" style={[styles.chartCard, styles.rowGap]}>
-          <Text variant="titleMd" color="textPrimary">
-            {t("dashboard.graph.flows")}
-          </Text>
-          <TrendChart series={flowSeries} labels={model.labels} />
-        </Card>
+        <MetricGraph
+          title={t("dashboard.graph.flows")}
+          metrics={flowMetrics}
+          duration={duration}
+          transactions={txns}
+          invoices={invs}
+        />
       </FadeSlideIn>
     </Screen>
   );
@@ -302,6 +205,5 @@ const useStyles = makeStyles((t) => ({
     backgroundColor: t.colors.surfaceMuted,
   },
   filterChipActive: { backgroundColor: t.colors.primary },
-  chartCard: { gap: t.spacing.md, marginTop: t.spacing.lg },
   pressed: { opacity: 0.6 },
 }));
