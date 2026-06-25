@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Animated, Easing, View, type LayoutChangeEvent } from "react-native";
 import Svg, { Circle, G, Path, Polyline, Rect } from "react-native-svg";
 
@@ -13,16 +13,19 @@ const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
 export type ChartType = "line" | "bar" | "pie";
 export type ChartPoint = { label: string; value: number };
+export type ChartSeries = { key: string; color: string; data: ChartPoint[] };
 
 export type CustomChartProps = {
   type: ChartType;
-  data: ChartPoint[];
-  /** Primary stroke/fill colour (defaults to the accent). */
-  color?: string;
+  /** One or more series sharing the same x labels (line/bar overlay them; pie uses the first). */
+  series: ChartSeries[];
   height?: number;
 };
 
 const DRAW_MS = 850;
+const STAGGER_MS = 140;
+const PAD_X = 6;
+const PAD_TOP = 12;
 
 /** Pie slice palette — themed tints cycled across categories. */
 function usePalette(): string[] {
@@ -65,38 +68,46 @@ function arcPath(
   ].join(" ");
 }
 
-/** Progress value (0→1) restarted whenever `signature` changes — drives the entrance. */
-function useReveal(signature: string): Animated.Value {
-  const progress = useRef(new Animated.Value(0)).current;
+/** One progress value per series, restarted (staggered) whenever the data/type changes. */
+function useReveal(count: number, signature: string): Animated.Value[] {
+  const anims = useMemo(() => Array.from({ length: count }, () => new Animated.Value(0)), [count]);
   useEffect(() => {
-    progress.setValue(0);
-    Animated.timing(progress, {
-      toValue: 1,
-      duration: DRAW_MS,
-      easing: Easing.out(Easing.cubic),
-      useNativeDriver: false,
-    }).start();
-  }, [progress, signature]);
-  return progress;
+    anims.forEach((a) => a.setValue(0));
+    Animated.stagger(
+      STAGGER_MS,
+      anims.map((a) =>
+        Animated.timing(a, {
+          toValue: 1,
+          duration: DRAW_MS,
+          easing: Easing.out(Easing.cubic),
+          useNativeDriver: false,
+        }),
+      ),
+    ).start();
+  }, [anims, signature]);
+  return anims;
 }
 
 /**
- * Single-series chart that renders as a line, bars, or a pie/donut, driven by `type`
- * (Tableau de bord). Animates on mount and whenever the data/type changes: the line draws
- * on, the bars grow from the baseline, the pie scales in. Pure react-native-svg.
+ * Multi-series chart that renders as lines, grouped bars, or a pie/donut, driven by `type`
+ * (Tableau de bord). Each series draws on with a staggered reveal (line draws, bars grow,
+ * pie scales in). Pure react-native-svg so it themes with tokens.
  */
-export function CustomChart({ type, data, color, height = 180 }: CustomChartProps) {
+export function CustomChart({ type, series, height = 180 }: CustomChartProps) {
   const theme = useTheme();
   const styles = useStyles();
   const palette = usePalette();
   const [width, setWidth] = useState(0);
-  const stroke = color ?? theme.colors.accent;
-  const signature = `${type}|${data.map((d) => d.value).join(",")}`;
-  const progress = useReveal(signature);
+
+  const signature = `${type}|${series.map((s) => `${s.key}:${s.data.map((d) => d.value).join(",")}`).join("|")}`;
+  const anims = useReveal(series.length, signature);
 
   const onLayout = (e: LayoutChangeEvent) => setWidth(e.nativeEvent.layout.width);
 
-  if (data.length === 0) {
+  const labels = series[0]?.data ?? [];
+  const isEmpty = series.length === 0 || labels.length === 0;
+
+  if (isEmpty) {
     return (
       <View style={[styles.empty, { height }]} onLayout={onLayout}>
         <Text variant="bodyMd" color="textSecondary">
@@ -107,100 +118,116 @@ export function CustomChart({ type, data, color, height = 180 }: CustomChartProp
   }
 
   if (type === "pie") {
+    const first = series[0]!;
     return (
-      <Pie data={data} height={height} palette={palette} onLayout={onLayout} progress={progress} />
+      <Pie
+        data={first.data}
+        height={height}
+        palette={palette}
+        onLayout={onLayout}
+        progress={anims[0]!}
+      />
     );
   }
 
-  // Line / bar share the same plot maths.
-  const padX = 6;
-  const padTop = 12;
-  const innerW = Math.max(1, width - padX * 2);
-  const innerH = height - padTop;
-  const values = data.map((d) => d.value);
-  const max = Math.max(1, ...values);
-  const min = Math.min(0, ...values);
+  // Line / bar share the plot maths; the scale spans every series.
+  const n = labels.length;
+  const innerW = Math.max(1, width - PAD_X * 2);
+  const innerH = height - PAD_TOP;
+  const all = series.flatMap((s) => s.data.map((d) => d.value));
+  const max = Math.max(1, ...all);
+  const min = Math.min(0, ...all);
   const span = max - min || 1;
-  const x = (i: number) =>
-    padX + (data.length === 1 ? innerW / 2 : (i / (data.length - 1)) * innerW);
-  const y = (v: number) => padTop + innerH - ((v - min) / span) * innerH;
+  const x = (i: number) => PAD_X + (n === 1 ? innerW / 2 : (i / (n - 1)) * innerW);
+  const y = (v: number) => PAD_TOP + innerH - ((v - min) / span) * innerH;
 
-  const pts = data.map((d, i) => [x(i), y(d.value)] as [number, number]);
-  let lineLen = 1;
-  for (let i = 1; i < pts.length; i += 1) {
-    lineLen += Math.hypot(pts[i]![0] - pts[i - 1]![0], pts[i]![1] - pts[i - 1]![1]);
-  }
+  const groupW = (innerW / n) * 0.7;
+  const barW = Math.max(3, groupW / series.length);
 
   return (
     <View onLayout={onLayout}>
       {width > 0 ? (
         <Svg width={width} height={height}>
           <Path
-            d={`M ${padX} ${y(min)} L ${width - padX} ${y(min)}`}
+            d={`M ${PAD_X} ${y(min)} L ${width - PAD_X} ${y(min)}`}
             stroke={theme.colors.border}
             strokeWidth={1}
           />
-          {type === "line" ? (
-            <G>
-              <AnimatedPath
-                d={`M ${pts[0]![0]} ${pts[0]![1]} ${pts
-                  .map((p) => `L ${p[0]} ${p[1]}`)
-                  .join(" ")} L ${x(data.length - 1)} ${y(min)} L ${x(0)} ${y(min)} Z`}
-                fill={stroke}
-                fillOpacity={progress.interpolate({ inputRange: [0, 1], outputRange: [0, 0.12] })}
-              />
-              <AnimatedPolyline
-                points={pts.map((p) => `${p[0]},${p[1]}`).join(" ")}
-                fill="none"
-                stroke={stroke}
-                strokeWidth={2.5}
-                strokeLinejoin="round"
-                strokeLinecap="round"
-                strokeDasharray={lineLen}
-                strokeDashoffset={progress.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [lineLen, 0],
-                })}
-              />
-              {pts.map((p, i) => (
-                <AnimatedCircle
-                  key={(data[i]?.label ?? "") + i}
-                  cx={p[0]}
-                  cy={p[1]}
-                  r={3}
-                  fill={stroke}
-                  opacity={progress.interpolate({ inputRange: [0.6, 1], outputRange: [0, 1] })}
-                />
-              ))}
-            </G>
-          ) : (
-            <G>
-              {data.map((d, i) => {
-                const bw = Math.max(3, (innerW / data.length) * 0.55);
-                const bx = x(i) - bw / 2;
-                const top = y(Math.max(0, d.value));
-                const full = Math.max(2, Math.abs(y(d.value) - y(0)));
-                return (
-                  <AnimatedRect
-                    key={d.label + i}
-                    x={bx}
-                    y={progress.interpolate({ inputRange: [0, 1], outputRange: [y(0), top] })}
-                    width={bw}
-                    height={progress.interpolate({ inputRange: [0, 1], outputRange: [0, full] })}
-                    rx={3}
-                    fill={stroke}
+          {series.map((s, si) => {
+            const progress = anims[si]!;
+            if (type === "line") {
+              const pts = s.data.map((d, i) => [x(i), y(d.value)] as [number, number]);
+              let len = 1;
+              for (let i = 1; i < pts.length; i += 1) {
+                len += Math.hypot(pts[i]![0] - pts[i - 1]![0], pts[i]![1] - pts[i - 1]![1]);
+              }
+              const last = pts[pts.length - 1];
+              return (
+                <G key={s.key}>
+                  <AnimatedPath
+                    d={`M ${pts[0]![0]} ${pts[0]![1]} ${pts
+                      .map((p) => `L ${p[0]} ${p[1]}`)
+                      .join(" ")} L ${x(n - 1)} ${y(min)} L ${x(0)} ${y(min)} Z`}
+                    fill={s.color}
+                    fillOpacity={progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [0, 0.1],
+                    })}
                   />
-                );
-              })}
-            </G>
-          )}
+                  <AnimatedPolyline
+                    points={pts.map((p) => `${p[0]},${p[1]}`).join(" ")}
+                    fill="none"
+                    stroke={s.color}
+                    strokeWidth={2.5}
+                    strokeLinejoin="round"
+                    strokeLinecap="round"
+                    strokeDasharray={len}
+                    strokeDashoffset={progress.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [len, 0],
+                    })}
+                  />
+                  {last ? (
+                    <AnimatedCircle
+                      cx={last[0]}
+                      cy={last[1]}
+                      r={3.5}
+                      fill={s.color}
+                      opacity={progress.interpolate({ inputRange: [0.7, 1], outputRange: [0, 1] })}
+                    />
+                  ) : null}
+                </G>
+              );
+            }
+            // Grouped bars.
+            return (
+              <G key={s.key}>
+                {s.data.map((d, i) => {
+                  const bx = x(i) - groupW / 2 + si * barW;
+                  const top = y(Math.max(0, d.value));
+                  const full = Math.max(2, Math.abs(y(d.value) - y(0)));
+                  return (
+                    <AnimatedRect
+                      key={d.label + i}
+                      x={bx}
+                      y={progress.interpolate({ inputRange: [0, 1], outputRange: [y(0), top] })}
+                      width={barW * 0.9}
+                      height={progress.interpolate({ inputRange: [0, 1], outputRange: [0, full] })}
+                      rx={3}
+                      fill={s.color}
+                    />
+                  );
+                })}
+              </G>
+            );
+          })}
         </Svg>
       ) : (
         <View style={{ height }} />
       )}
       <View style={styles.xLabels}>
-        {data.map((d, i) =>
-          i % Math.ceil(data.length / 6) === 0 || i === data.length - 1 ? (
+        {labels.map((d, i) =>
+          i % Math.ceil(n / 6) === 0 || i === n - 1 ? (
             <Text key={d.label + i} variant="caption" color="textSecondary" style={styles.xLabel}>
               {d.label}
             </Text>

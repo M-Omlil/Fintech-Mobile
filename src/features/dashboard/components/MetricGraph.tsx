@@ -10,7 +10,7 @@ import type { ThemeColors } from "@theme/theme";
 
 import { computeChartData, type DurationKey, type MetricKey } from "../dashboardData";
 
-import { CustomChart, type ChartType } from "./CustomChart";
+import { CustomChart, type ChartSeries, type ChartType } from "./CustomChart";
 
 export type GraphMetric = {
   key: MetricKey;
@@ -23,7 +23,7 @@ export type GraphMetric = {
 
 export type MetricGraphProps = {
   title: string;
-  /** The metrics this graph can switch between (its "stats"). */
+  /** The metrics this graph can switch between (multi-select — one or both at once). */
   metrics: GraphMetric[];
   /** Global period filter, applied from outside. */
   duration: DurationKey;
@@ -39,9 +39,9 @@ const TYPE_ICON: Record<ChartType, LucideIcon> = {
 };
 
 /**
- * One dashboard graph: a stat (the selected metric's total, counting up), chips to switch
- * between the graph's metrics (one at a time), and a line/bar/pie toggle. The period is
- * supplied from the screen's global filter, not chosen here.
+ * One dashboard graph: multi-select chips to pick one or both of the graph's metrics, a
+ * line/bar/pie toggle, and the figure(s) counting up (white, the colour lives in the
+ * chart/legend). The period is supplied from the screen's global filter, not chosen here.
  */
 export function MetricGraph({
   title,
@@ -55,17 +55,34 @@ export function MetricGraph({
   const styles = useStyles();
   const tk = t as unknown as (k: string) => string;
 
-  const [metricKey, setMetricKey] = useState<MetricKey>(metrics[0]!.key);
+  const [selectedKeys, setSelectedKeys] = useState<MetricKey[]>([metrics[0]!.key]);
   const [chartType, setChartType] = useState<ChartType>("line");
-  const selected = metrics.find((m) => m.key === metricKey) ?? metrics[0]!;
 
-  const data = useMemo(
+  const selected = metrics.filter((m) => selectedKeys.includes(m.key));
+  const selectedSig = selectedKeys.join(",");
+
+  const toggle = (key: MetricKey) =>
+    setSelectedKeys((prev) =>
+      prev.includes(key)
+        ? prev.length > 1
+          ? prev.filter((k) => k !== key)
+          : prev // keep at least one selected
+        : [...prev, key],
+    );
+
+  const series: ChartSeries[] = useMemo(
     () =>
-      computeChartData(metricKey, chartType, duration, transactions, invoices, new Date(), {
-        inflows: t("dashboard.inflows"),
-        outflows: t("dashboard.outflows"),
-      }),
-    [metricKey, chartType, duration, transactions, invoices, t],
+      selected.map((m) => ({
+        key: m.key,
+        color: theme.colors[m.color],
+        data: computeChartData(m.key, chartType, duration, transactions, invoices, new Date(), {
+          inflows: t("dashboard.inflows"),
+          outflows: t("dashboard.outflows"),
+        }),
+      })),
+    // selectedSig captures which metrics are on; theme/colors are stable per scheme.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [selectedSig, chartType, duration, transactions, invoices, t],
   );
 
   const cycleType = () =>
@@ -91,21 +108,40 @@ export function MetricGraph({
         </Pressable>
       </View>
 
-      {/* Stat stays neutral (white on dark); the metric colour lives in the chart line. */}
-      <AnimatedAmount
-        value={selected.total}
-        signed={selected.signed}
-        variant="titleLg"
-        color="textPrimary"
-      />
+      {/* Stat (single metric) or legend (both) — figures white, colour shown by the dot. */}
+      {selected.length === 1 ? (
+        <AnimatedAmount
+          value={selected[0]!.total}
+          signed={selected[0]!.signed}
+          variant="titleLg"
+          color="textPrimary"
+        />
+      ) : (
+        <View style={styles.legend}>
+          {selected.map((m) => (
+            <View key={m.key} style={styles.legendItem}>
+              <View style={[styles.dot, { backgroundColor: theme.colors[m.color] }]} />
+              <Text variant="caption" color="textSecondary">
+                {m.label}
+              </Text>
+              <AnimatedAmount
+                value={m.total}
+                signed={m.signed}
+                variant="label"
+                color="textPrimary"
+              />
+            </View>
+          ))}
+        </View>
+      )}
 
       <View style={styles.chips}>
         {metrics.map((m) => {
-          const active = m.key === metricKey;
+          const active = selectedKeys.includes(m.key);
           return (
             <Pressable
               key={m.key}
-              onPress={() => setMetricKey(m.key)}
+              onPress={() => toggle(m.key)}
               accessibilityRole="button"
               accessibilityState={{ selected: active }}
               style={({ pressed }) => [
@@ -122,7 +158,7 @@ export function MetricGraph({
         })}
       </View>
 
-      <CustomChart type={chartType} data={data} color={theme.colors[selected.color]} />
+      <CustomChart type={chartType} series={series} />
     </Card>
   );
 }
@@ -144,6 +180,9 @@ const useStyles = makeStyles((t) => ({
     borderRadius: t.radii.pill,
     backgroundColor: t.colors.surfaceAccent,
   },
+  legend: { flexDirection: "row", flexWrap: "wrap", gap: t.spacing.lg },
+  legendItem: { flexDirection: "row", alignItems: "center", gap: t.spacing.xs },
+  dot: { width: 10, height: 10, borderRadius: 5 },
   chips: { flexDirection: "row", flexWrap: "wrap", gap: t.spacing.sm },
   chip: {
     paddingHorizontal: t.spacing.md,

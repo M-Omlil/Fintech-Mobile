@@ -694,7 +694,7 @@ export const fr = {
       tva: "TVA due ce trimestre",
       tvaSub: "Trimestre · collectée − déductible",
     },
-    prelevementTva: "Prélèvement TVA",
+    prelevementTva: "Provision TVA",
     metric: {
       ca: "Chiffre d'affaires",
       encaissements: "Encaissements",
