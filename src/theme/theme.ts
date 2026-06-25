@@ -59,8 +59,8 @@ const lightColors: ThemeColors = {
  */
 const darkColors: ThemeColors = {
   background: palette.deepIndigo,
-  surface: "rgba(255,255,255,0.07)",
-  surfaceMuted: "rgba(255,255,255,0.05)",
+  surface: "rgba(255,255,255,0.09)",
+  surfaceMuted: "rgba(255,255,255,0.06)",
   surfaceAccent: "rgba(110,86,247,0.20)",
   surfaceDark: "rgba(4,6,24,0.40)",
   textPrimary: "#F3F5FF",

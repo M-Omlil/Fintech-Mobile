@@ -26,13 +26,11 @@ export function Card({ variant = "surface", padding = "lg", children, style }: C
 }
 
 const useStyles = makeStyles((t) => ({
-  // Every surface carries a soft glass rim — subtle, not a hard outline. The neon
-  // glow is reserved for hero/interactive elements (Button, tab bar), so dense lists
-  // of cards stay calm.
+  // No outline — a hard 1px line always reads as a boxy edge. Cards are defined by a
+  // slightly-lighter translucent fill + a soft shadow (true "soft glass"). The neon
+  // glow is reserved for hero/interactive elements (Button, tab bar).
   base: {
     borderRadius: t.radii.card,
-    borderWidth: t.sizing.hairline,
-    borderColor: t.colors.cardBorder,
   },
   surface: {
     backgroundColor: t.colors.surface,
